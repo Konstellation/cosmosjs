@@ -17,7 +17,7 @@ class Chain {
         this.url = url;
         this.chainId = chainId;
         this.bech32MainPrefix = bech32MainPrefix;
-        this.path = path;
+        this.path = path || "m/44'/118'/0'/0/0";
 
         if (!this.url) {
             throw new Error("url object was not set or invalid")

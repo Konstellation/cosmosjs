@@ -4,8 +4,6 @@ async function _() {
     const chain = sdk.network({
         url: "http://127.0.0.1:1317",
         chainId: 'darchub',
-        bech32MainPrefix: "darc",
-        path: "m/44'/118'/0'/0/0"
     });
 
     const mnemonic = "idle practice stadium maple cake traffic input zoo inherit tip mixture upgrade squirrel photo cabbage result limb consider foam tank sad improve grass wolf";
