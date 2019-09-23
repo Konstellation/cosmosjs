@@ -77,12 +77,12 @@ Get address
 
 Get balance
 ```js
-    let balance = await chain.getBalance(address);
+    let balance = await chain.fetchBalance(address);
 ```
 
 Get account info
 ```js
-    let accountInfo = await chain.getAccounts(address);
+    let accountInfo = await chain.fetchAccount(address);
     account = account.updateInfo(accountInfo.result.value);
 ```
 
@@ -102,7 +102,7 @@ Make sure to input proper type, account number, and sequence of the cosmos accou
 
 Build transaction
 ```js
-    let tx = chain.buildTx(msg, {
+    let signMsg = chain.buildSignMsg(msg, {
         chainId: 'darchub',
         feeDenom: "darc",
         fee: 5000,
@@ -115,14 +115,14 @@ Build transaction
 
 Sign transaction 
 ```js
-    const signedTx = chain.signWithAccount(tx, account);
+    const stdTx = chain.signWithAccount(signMsg, account);
 or
-    const signedTx = chain.sign(tx, account.getPrivateKey(), account.getPublicKey());
+    const stdTx = chain.sign(signMsg, account.getPrivateKey(), account.getPublicKey());
 ```
 
 Broadcast transaction 
 ```js
-    const broadcastInfo = await chain.broadcastTx(signedTx);
+    const broadcastInfo = await chain.broadcastTx(signTx, 'sync');
 ```
 
 - Transfer method

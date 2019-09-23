@@ -1,9 +1,8 @@
 'use strict';
 
-const MsgBuilder = require('./utils/msgbuilder');
-const TxBuilder = require('./utils/txbuilder');
-const TxSigner = require('./utils/txsigner');
-const Account = require('./utils/account');
+const MsgBuilder = require('./utils/types/MsgBuilder');
+const TxBuilder = require('./utils/types/TxBuilder');
+const Account = require('./utils/types/Account');
 
 const get = require('./helpers/request/get');
 const post = require('./helpers/request/post');
@@ -35,22 +34,45 @@ class Chain {
 
         this.msgBuilder = new MsgBuilder().registerMsgTypes();
         this.txBuilder = new TxBuilder();
-        this.txSigner = new TxSigner();
     }
 
-    async getAccounts(address) {
+    async fetchAccount(address) {
         let accountsApi = "/auth/accounts/";
+
         return await get(`${this.url}${accountsApi}${address}`);
     }
 
-    async getBalance(address) {
+    async fetchBalance(address) {
         let balanceApi = '/bank/balances/';
+
         return await get(`${this.url}${balanceApi}${address}`);
     }
 
-    async broadcastTx(signedTx) {
+    async broadcastTx(signedTx, mode = 'sync') {
         let broadcastApi = "/txs";
-        return await post(`${this.url}${broadcastApi}`, signedTx);
+
+        return await post(`${this.url}${broadcastApi}`, {
+            tx: signedTx,
+            mode
+        });
+    }
+
+    async fetchTransaction(hash) {
+        let txApi = '/txs/';
+
+        return await get(`${this.url}${txApi}${hash}`)
+    }
+
+    async fetchOutboundTransactions(address, limit = 30) {
+        let txApi = '/txs';
+
+        return await get(`${this.url}${txApi}?message.action=send&message.sender=${address}&limit=${limit}`)
+    }
+
+    async fetchInboundTransactions(address, limit = 30) {
+        let txApi = '/txs';
+
+        return await get(`${this.url}${txApi}?transfer.recipient=${address}&limit=${limit}`)
     }
 
     generateAccount() {
@@ -66,16 +88,16 @@ class Chain {
         return msgType.build(input)
     }
 
-    buildTx(msg, txInfo, modeType = "sync") {
-        return this.txBuilder.build(msg, txInfo, modeType)
+    buildSignMsg(msg, txInfo) {
+        return this.txBuilder.build(msg, txInfo)
     }
 
-    signWithAccount(tx, account) {
-        return this.sign(tx, account.getPrivateKey(), account.getPublicKey())
+    signWithAccount(stdSignMsg, account) {
+        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKey())
     }
 
-    sign(tx, privateKey, publicKey) {
-        return this.txSigner.sign(tx, privateKey, publicKey);
+    sign(stdSignMsg, privateKey, publicKey) {
+        return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
     }
 
     async transferFromAccount({
@@ -95,7 +117,7 @@ class Chain {
             denom,
             amount,
         });
-        let tx = this.buildTx(msg, {
+        let signMsg = this.buildSignMsg(msg, {
             chainId: this.chainId,
             feeDenom,
             fee,
@@ -104,8 +126,8 @@ class Chain {
             accountNumber: from.getAccountNumber(),
             sequence: from.getSequence()
         });
-        const signedTx = this.signWithAccount(tx, from);
-        return await this.broadcastTx(signedTx);
+        const stdTx = this.signWithAccount(signMsg, from);
+        return await this.broadcastTx(stdTx);
     }
 
     async transfer({
@@ -129,7 +151,7 @@ class Chain {
             denom,
             amount,
         });
-        let tx = this.buildTx(msg, {
+        let tx = this.buildSignMsg(msg, {
             chainId: this.chainId,
             feeDenom,
             fee,

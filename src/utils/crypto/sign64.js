@@ -1,9 +1,7 @@
 const secp256k1 = require('secp256k1');
 const crypto = require('crypto');
 
-const {
-    sortObject
-} = require('../encode');
+const sortObject = require('../encode/sortObject');
 
 function sign64(msg, privateKey) {
     // The supported return types includes "block"(return after tx commit), "sync"(return afer CheckTx) and "async"(return right away).
@@ -13,6 +11,4 @@ function sign64(msg, privateKey) {
     return Buffer.from(signObj.signature, 'binary').toString('base64');
 }
 
-module.exports = {
-    sign64
-};
+module.exports = sign64;

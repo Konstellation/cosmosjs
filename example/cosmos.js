@@ -12,19 +12,28 @@ async function _() {
     let account = chain.recoverAccount(mnemonic);
 
     const address = account.getAddress();
-    let accountInfo = await chain.getAccounts(address);
+    let accountInfo = await chain.fetchAccount(address);
     account = account.updateInfo(accountInfo.result.value);
     console.log(account.getAddress());
 
+    let txsInfo = await chain.fetchInboundTransactions(address);
+    console.log(txsInfo.txs.length);
+
+    txsInfo = await chain.fetchOutboundTransactions(address);
+    console.log(txsInfo.txs.length);
+
+    // let txInfo = await chain.fetchTransaction('FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5');
+    // console.log(txInfo);
+
     // ---------------- TransferFromAccount method ---------------------------
 
-    let resTransferFromAccount = await chain.transferFromAccount({
-        from: account,
-        to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
-        amount: 200
-    });
-
-    console.log(resTransferFromAccount);
+    // let resTransferFromAccount = await chain.transferFromAccount({
+    //     from: account,
+    //     to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
+    //     amount: 200
+    // });
+    //
+    // console.log(resTransferFromAccount);
 
     // ---------------- Transfer method method ---------------------------
 
@@ -40,7 +49,7 @@ async function _() {
     //
     // console.log(resTransfer);
     //
-    // // ---------------- Raw method ---------------------------
+    // ---------------- Raw method ---------------------------
     //
     // let msg = chain.buildMsg({
     //     type: "cosmos-sdk/MsgSend",
@@ -49,7 +58,7 @@ async function _() {
     //     denom: "darc",
     //     amount: 100,		// 6 decimal places
     // });
-    // let tx = chain.buildTx(msg, {
+    // let signMsg = chain.buildSignMsg(msg, {
     //     chainId: 'darchub',
     //     feeDenom: "darc",
     //     fee: 5000,
@@ -58,8 +67,8 @@ async function _() {
     //     accountNumber: account.getAccountNumber(),
     //     sequence: account.getSequence()
     // });
-    // const signedTx = chain.signWithAccount(tx, account);
-    // const broadcastInfo = await chain.broadcastTx(signedTx);
+    // const stdTx = chain.signWithAccount(signMsg, account);
+    // const broadcastInfo = await chain.broadcastTx(stdTx, 'sync');
     // console.log(broadcastInfo);
 }
 
