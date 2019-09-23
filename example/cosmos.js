@@ -16,14 +16,30 @@ async function _() {
     account = account.updateInfo(accountInfo.result.value);
     console.log(account.getAddress());
 
-    let txsInfo = await chain.fetchInboundTransactions(address);
+    let txsInfo = await chain.fetchInboundTransactions(address, 100);
     console.log(txsInfo.txs.length);
 
-    txsInfo = await chain.fetchOutboundTransactions(address);
+    txsInfo = await chain.fetchOutboundTransactions(address, 100);
     console.log(txsInfo.txs.length);
 
     // let txInfo = await chain.fetchTransaction('FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5');
     // console.log(txInfo);
+
+    let node_info = await chain.request({
+        method: 'GET',
+        uri: '/node_info',
+    });
+    console.log(node_info);
+
+    let req = await chain.request({
+        method: 'GET',
+        uri: '/txs',
+        path: '/FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5'
+    });
+    console.log(req);
+
+    // let coinsInfo = await chain.fetchTotalCoins();
+    // console.log(coinsInfo);
 
     // ---------------- TransferFromAccount method ---------------------------
 

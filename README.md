@@ -49,7 +49,10 @@ const cosmosjs = require("@konstellation/cosmosjs");
 ```
 
 ## Usage
-Init network
+Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
+* API Rate Limiting: 10 requests per second
+
+###Init network
 ```js
     const chain = sdk.network({
         url: lcdUrl,
@@ -59,36 +62,37 @@ Init network
     });
 ```
 
-Generate Cosmos account
+###Generate Cosmos account
 ```js
     let account = chain.generateAccount();
 ```
 
-Recover Cosmos account from mnemonic
+###Recover Cosmos account from mnemonic
 ```js
     const mnemonic = "...";
     let account = chain.recoverAccount(mnemonic);
 ```
 
-Get address
+###Get address
 ```js
     const address = account.getAddress();
 ```
 
-Get balance
+###Get balance
 ```js
     let balance = await chain.fetchBalance(address);
 ```
 
-Get account info
+###Get account info
 ```js
     let accountInfo = await chain.fetchAccount(address);
     account = account.updateInfo(accountInfo.result.value);
 ```
 
-Transfer DARC to designated address. 
-- Raw method
+###Transfer DARC to destination address. 
+####- Raw method
 
+##### Build message
 Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
 ```js
      let msg = chain.buildMsg({
@@ -100,7 +104,7 @@ Make sure to input proper type, account number, and sequence of the cosmos accou
      });
 ```
 
-Build transaction
+#####Build transaction
 ```js
     let signMsg = chain.buildSignMsg(msg, {
         chainId: 'darchub',
@@ -113,19 +117,19 @@ Build transaction
     });
 ```
 
-Sign transaction 
+#####Sign transaction 
 ```js
     const stdTx = chain.signWithAccount(signMsg, account);
 or
     const stdTx = chain.sign(signMsg, account.getPrivateKey(), account.getPublicKey());
 ```
 
-Broadcast transaction 
+#####Broadcast transaction 
 ```js
-    const broadcastInfo = await chain.broadcastTx(signTx, 'sync');
+    const broadcastInfo = await chain.broadcastTx(stdTx, 'sync');
 ```
 
-- Transfer method
+####- Transfer method
 ```js
 let res = await chain.transfer({
         from: account.getAddress(),
@@ -138,7 +142,7 @@ let res = await chain.transfer({
     });
 ```
 
-- TransferFromAccount method
+####- TransferFromAccount method
 ```js
 let res = await chain.transferFromAccount({
         from: account,
@@ -147,10 +151,30 @@ let res = await chain.transferFromAccount({
     });
 ```
 
-Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
-* API Rate Limiting: 10 requests per second
+###Fetch transactions where address is recipient
+```js
+    let txsInfo = await chain.fetchInboundTransactions(address, 100);
+```
 
-## Supporting Message Types (Updating...)
+###Fetch transaction where address is sender
+```js
+    let txsInfo = await chain.fetchOutboundTransactions(address, 100);
+```
+
+###Fetch coin info
+```js
+    let coinsInfo = await chain.fetchTotalCoins();
+```
+
+###Fetch custom request
+```js
+    let node_info = await chain.request({
+        method: 'GET',
+        uri: '/node_info',
+    });
+```
+
+#### Supporting Message Types (Updating...)
 
 - cosmos-sdk/MsgSend
 ```js

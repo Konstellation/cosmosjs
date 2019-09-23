@@ -36,6 +36,20 @@ class Chain {
         this.txBuilder = new TxBuilder();
     }
 
+    // --------------- api ------------------
+
+    async request({method, uri, path, params, data}) {
+        let url = new URL(`${this.url}${uri}${path ? '/' + path : ''}`);
+        params && Object.keys(params).forEach(param => {
+            url.searchParams.append(param, params[param])
+        });
+        if (method) {
+            return get(url.toString());
+        } else {
+            return post(url.toString(), data);
+        }
+    }
+
     async fetchAccount(address) {
         let accountsApi = "/auth/accounts/";
 
@@ -74,6 +88,14 @@ class Chain {
 
         return await get(`${this.url}${txApi}?transfer.recipient=${address}&limit=${limit}`)
     }
+
+    async fetchTotalCoins(denom) {
+        let supplyApi = '/supply/total/';
+
+        return await get(`${this.url}${supplyApi}${denom ? denom : ''}`);
+    }
+
+    // --------------- api ------------------
 
     generateAccount() {
         return new Account(this.path, this.bech32MainPrefix).generate()
