@@ -5,14 +5,14 @@
     CosmosJS - Cosmos JavaScript Library 
 </h1>
 
-*:star: Developed / Developing by [Cosmostation](https://www.cosmostation.io/)*
+*:star: Developed / Developing by [Konstellation](https://github.com/konstellation/) on [CosmosJS](https://github.com/cosmostation/cosmosjs/)*
 
-A JavasSript Open Source Library for [Cosmos Network](https://cosmos.network/) and [IRISnet](https://www.irisnet.org/)
+A JavasSript Open Source Library for [Konstellation Network](https://konstellation.tech/)
 
-This library supports cosmos address generation and verification. It enables you to create an offline signature functions of different types of transaction messages. It will eventually support all the other blockchains that are based on Tendermint in the future, such as Kava and others.
+This library supports cosmos address generation and verification. It enables you to create an offline signature functions of different types of transaction messages. It will eventually support all the other blockchains that are based on Tendermint in the future, such as IOV and others.
 
-[![MIT](https://img.shields.io/apm/l/vim-mode.svg)](https://github.com/cosmostation/cosmosjs/blob/master/LICENSE)
-[![NPM](https://img.shields.io/npm/v/@cosmostation/cosmosjs.svg)](https://www.npmjs.com/package/@cosmostation/cosmosjs)
+[![MIT](https://img.shields.io/apm/l/vim-mode.svg)](https://github.com/konstellation/cosmosjs/blob/master/LICENSE)
+[![NPM](https://img.shields.io/npm/v/@konstellation/cosmosjs.svg)](https://www.npmjs.com/package/@konstellation/cosmosjs)
 
 ## Installation
 
@@ -21,13 +21,13 @@ In order to fully use this library, you need to run a local or remote full node 
 ### NPM
 
 ```bash
-npm install @cosmostation/cosmosjs
+npm install @konstellation/cosmosjs
 ```
 
 ### Yarn
 
 ```bash
-yarn add @cosmostation/cosmosjs
+yarn add @konstellation/cosmosjs
 ```
 
 ### Browser Distribution
@@ -39,7 +39,7 @@ CosmosJS supports browserify.
 #### NodeJS
 
 ```js
-const cosmosjs = require("@cosmostation/cosmosjs");
+const cosmosjs = require("@konstellation/cosmosjs");
 ```
 
 #### Browser
@@ -49,81 +49,124 @@ const cosmosjs = require("@cosmostation/cosmosjs");
 ```
 
 ## Usage
-- Cosmos: Generate Cosmos address from mnemonic 
+Init network
 ```js
-const cosmosjs = require("@cosmostation/cosmosjs");
-
-const chainId = "cosmoshub-2";
-const cosmos = cosmosjs.network(lcdUrl, chainId);
-
-const mnemonic = "..."
-cosmos.setPath("m/44'/118'/0'/0/0");
-const address = cosmos.getAddress(mnemonic);
-const ecpairPriv = cosmos.getECPairPriv(mnemonic);
-```
-- Iris
-```js
-const cosmosjs = require("@cosmostation/cosmosjs");
-
-const chainId = "irishub";
-const iris = cosmosjs.network(lcdUrl, chainId);
-iris.setBech32MainPrefix("iaa");
+    const chain = sdk.network({
+        url: lcdUrl,
+        chainId: 'darchub',
+        bech32MainPrefix: "darc",
+        path: "m/44'/118'/0'/0/0"
+    });
 ```
 
-Generate ECPairPriv value that is needed for signing signatures
+Generate Cosmos account
 ```js
-const ecpairPriv = cosmos.getECPairPriv(mnemonic);
+    let account = chain.generateAccount();
 ```
 
-Transfer ATOM to designated address. 
-* Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
-
+Recover Cosmos account from mnemonic
 ```js
-cosmos.getAccounts(address).then(data => {
-	let stdSignMsg = cosmos.NewStdMsg({
-		type: "cosmos-sdk/MsgSend",
-		from_address: address,
-		to_address: "cosmos18vhdczjut44gpsy804crfhnd5nq003nz0nf20v",
-		amountDenom: "uatom",
-		amount: 100000,
-		feeDenom: "uatom",
-		fee: 5000,
-		gas: 200000,
-		memo: "",
-		account_number: data.value.account_number,
-		sequence: data.value.sequence
-	});
-
-	...
-})
+    const mnemonic = "...";
+    let account = chain.recoverAccount(mnemonic);
 ```
 
-Sign transaction by using stdSignMsg and broadcast by using [/txs](https://lcd-do-not-abuse.cosmostation.io/txs) REST API
+Get address
 ```js
-const signedTx = cosmos.sign(stdSignMsg, ecpairPriv);
-cosmos.broadcast(signedTx).then(response => console.log(response));
+    const address = account.getAddress();
 ```
 
-Cosmostation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
+Get balance
+```js
+    let balance = await chain.getBalance(address);
+```
+
+Get account info
+```js
+    let accountInfo = await chain.getAccounts(address);
+    account = account.updateInfo(accountInfo.result.value);
+```
+
+Transfer DARC to designated address. 
+- Raw method
+
+Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
+```js
+     let msg = chain.buildMsg({
+            type: "cosmos-sdk/MsgSend",
+            from_address: account.getAddress(),
+            to_address: "...",
+            amountDenom: "darc",
+            amount: 100,	
+     });
+```
+
+Build transaction
+```js
+    let tx = chain.buildTx(msg, {
+        chainId: 'darchub',
+        feeDenom: "darc",
+        fee: 5000,
+        gas: 200000,
+        memo: "",
+        accountNumber: account.getAccountNumber(),
+        sequence: account.getSequence()
+    });
+```
+
+Sign transaction 
+```js
+    const signedTx = chain.signWithAccount(tx, account);
+or
+    const signedTx = chain.sign(tx, account.getPrivateKey(), account.getPublicKey());
+```
+
+Broadcast transaction 
+```js
+    const broadcastInfo = await chain.broadcastTx(signedTx);
+```
+
+- Transfer method
+```js
+let res = await chain.transfer({
+        from: account.getAddress(),
+        accountNumber: account.getAccountNumber(),
+        sequence: account.getSequence(),
+        privateKey: account.getPrivateKey(),
+        publicKey: account.getPublicKey(),
+        to: "...",
+        amount: 300,
+    });
+```
+
+- TransferFromAccount method
+```js
+let res = await chain.transferFromAccount({
+        from: account,
+        to: '...',
+        amount: 200
+    });
+```
+
+Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 * API Rate Limiting: 10 requests per second
 
 ## Supporting Message Types (Updating...)
 
 - cosmos-sdk/MsgSend
 ```js
-let stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgSend",
-	from_address: address,
-	to_address: "cosmos18vhdczjut44gpsy804crfhnd5nq003nz0nf20v",
-	amountDenom: "uatom",
-	amount: 1000000,
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
+let stdSignMsg = chain.buildMsg({
+      type: "cosmos-sdk/MsgSend",
+      from_address: address,
+      to_address: "...",
+      amountDenom: "darc",
+      amount: 5000,		// 6 decimal places
+      feeDenom: "darc",
+      fee: 5000,
+      gas: 200000,
+      memo: "",
+      account_number: account_info.result.value.account_number,
+      sequence: account_info.result.value.sequence
+    });
 ```
 - cosmos-sdk/MsgDelegate
 ```js
@@ -137,8 +180,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgUndelegate
@@ -153,8 +196,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgWithdrawDelegationReward
@@ -167,8 +210,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgSubmitProposal
@@ -185,8 +228,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgDeposit
@@ -201,8 +244,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgVote
@@ -216,8 +259,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgBeginRedelegate
@@ -234,7 +277,7 @@ stdSignMsg = cosmos.NewStdMsg({
 	gas: 200000,
 	memo: "",
 	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	sequence: account_info.result.value.sequence
 });
 ```
 - cosmos-sdk/MsgModifyWithdrawAddress
@@ -247,115 +290,8 @@ stdSignMsg = cosmos.NewStdMsg({
 	fee: 5000,
 	gas: 200000,
 	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/bank/Send
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/bank/Send",
-	inputsAddress:address,
-	inputsCoinsDenom:"iris-atto",
-	inputsCoinsAmount: 1000000000000000000,		// 18 decimal places
-	outputsAddress:"iaa12g4vfyq65yf5cds4v5pr3jmdd4v6s40fkaaxtf",
-	outputsCoinsDenom:"iris-atto",
-	outputsCoinsAmount: 1000000000000000000,
-	feeDenom: "iris-atto",
-	fee: 400000000000000000,
-	gas: 50000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/stake/MsgDelegate
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/stake/MsgDelegate",
-	delegator_addr: address,
-	validator_addr: "iva18pva3yzzzaxj7l5a9uk66a0q7lflscyw966jud",
-	amountDenom: "iris-atto",
-	amount: 1000000000000000000,
-	feeDenom: "iris-atto",
-	fee: 400000000000000000,
-	gas: 50000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/stake/BeginUnbonding
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/stake/BeginUnbonding",
-	delegator_addr: address,
-	validator_addr: "iva18pva3yzzzaxj7l5a9uk66a0q7lflscyw966jud",
-	amountDenom: "iris-atto",
-	amount: 1000000000000000000,
-	feeDenom: "iris-atto",
-	fee: 400000000000000000,
-	gas: 50000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/distr/MsgWithdrawDelegationReward
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/distr/MsgWithdrawDelegationReward",
-	delegator_addr: address,
-	validator_addr: "iva18pva3yzzzaxj7l5a9uk66a0q7lflscyw966jud",
-	feeDenom: "iris-atto",
-	fee: 600000000000000000,
-	gas: 100000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/distr/MsgWithdrawDelegationRewardsAll
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/distr/MsgWithdrawDelegationRewardsAll",
-	delegator_addr: address,
-	feeDenom: "iris-atto",
-	fee: 600000000000000000,
-	gas: 100000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/distr/MsgModifyWithdrawAddress
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/distr/MsgModifyWithdrawAddress",
-	delegator_addr: address,
-	withdraw_addr: "iaa12g4vfyq65yf5cds4v5pr3jmdd4v6s40fkaaxtf",
-	feeDenom: "iris-atto",
-	fee: 400000000000000000,
-	gas: 50000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
-});
-```
-- irishub/stake/BeginRedelegate
-```js
-stdSignMsg = iris.NewStdMsg({
-	type: "irishub/stake/BeginRedelegate",
-	delegator_addr: address,
-	validator_src_addr: "iva18pva3yzzzaxj7l5a9uk66a0q7lflscyw966jud",
-	validator_dst_addr: "iva1msqqkd3v0gmullzwm56c4frevyczzxfeczvjru",
-	shares_amount: 1000000000000000000,
-	feeDenom: "iris-atto",
-	fee: 600000000000000000,
-	gas: 65000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: data.value.sequence
+	account_number: account_info.result.value.account_number,
+	sequence: account_info.result.value.sequence
 });
 ```
 
@@ -368,14 +304,4 @@ This library is simple and easy to use. We don't have any formal documentation y
 - Contributions, suggestions, improvements, and feature requests are always welcome
 
 When opening a PR with a minor fix, make sure to add #trivial to the title/description of said PR.
-
-## Cosmostation's Services and Community
-
-- [Official Website](https://www.cosmostation.io)
-- [Mintscan Explorer](https://www.mintscan.io)
-- [Web Wallet](https://wallet.cosmostation.io)
-- [Android Wallet](https://bit.ly/2BWex9D)
-- [iOS Wallet](https://apple.co/2IAM3Xm)
-- [Telegram - International](https://t.me/cosmostation)
-- [Kakao - Koreans](https://open.kakao.com/o/g6KKSe5)
 

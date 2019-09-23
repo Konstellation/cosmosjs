@@ -1,7 +1,7 @@
 {
-  "name": "@cosmostation/cosmosjs",
-  "version": "0.3.1",
-  "description": "A JavasSript Open Source Library for Cosmos Network and IRISnet",
+  "name": "@konstellation/cosmosjs",
+  "version": "1.0.0",
+  "description": "A JavasSript Open Source Library for Konstellation Network",
   "main": "./src/index.js",
   "engines": {
     "node": ">=8.0.0"
@@ -11,14 +11,13 @@
     "cosmos",
     "tendermint",
     "javascript",
-    "atom",
-    "cosmostation",
-    "iris"
+    "darc",
+    "konstellation"
   ],
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
-  "author": "Cosmostation",
+  "author": "Konstellation",
   "license": "MIT",
   "dependencies": {
     "bech32": "^1.1.3",

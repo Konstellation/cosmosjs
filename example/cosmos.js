@@ -1,30 +1,66 @@
-const cosmosjs = require("../src");
+const sdk = require("../src");
 
-// [WARNING] This mnemonic is just for the demo purpose. DO NOT USE THIS MNEMONIC for your own wallet.
-const mnemonic = "swear buyer security impulse public stereo peasant correct cross tornado bid discover anchor float venture deal patch property cool wreck eight dwarf december surface";
-const chainId = "cosmoshub-2";
-const cosmos = cosmosjs.network("https://lcd-do-not-abuse.cosmostation.io", chainId);
-cosmos.setBech32MainPrefix("cosmos");
-cosmos.setPath("m/44'/118'/0'/0/0");
-const address = cosmos.getAddress(mnemonic);
-const ecpairPriv = cosmos.getECPairPriv(mnemonic);
+async function _() {
+    const chain = sdk.network({
+        url: "http://127.0.0.1:1317",
+        chainId: 'darchub',
+        bech32MainPrefix: "darc",
+        path: "m/44'/118'/0'/0/0"
+    });
 
-// Generate MsgSend transaction and broadcast 
-cosmos.getAccounts(address).then(data => {
-	let stdSignMsg = cosmos.NewStdMsg({
-		type: "cosmos-sdk/MsgSend",
-		from_address: address,
-		to_address: "cosmos18vhdczjut44gpsy804crfhnd5nq003nz0nf20v",
-		amountDenom: "uatom",
-		amount: 100000,		// 6 decimal places
-		feeDenom: "uatom",
-		fee: 5000,
-		gas: 200000,
-		memo: "",
-		account_number: data.value.account_number,
-		sequence: data.value.sequence
-	});
+    const mnemonic = "idle practice stadium maple cake traffic input zoo inherit tip mixture upgrade squirrel photo cabbage result limb consider foam tank sad improve grass wolf";
+    let account = chain.recoverAccount(mnemonic);
 
-	const signedTx = cosmos.sign(stdSignMsg, ecpairPriv);
-	cosmos.broadcast(signedTx).then(response => console.log(response));
-})
+    const address = account.getAddress();
+    let accountInfo = await chain.getAccounts(address);
+    account = account.updateInfo(accountInfo.result.value);
+    console.log(account.getAddress());
+
+    // ---------------- TransferFromAccount method ---------------------------
+
+    let resTransferFromAccount = await chain.transferFromAccount({
+        from: account,
+        to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
+        amount: 200
+    });
+
+    console.log(resTransferFromAccount);
+
+    // ---------------- Transfer method method ---------------------------
+
+    let resTransfer = await chain.transfer({
+        from: account.getAddress(),
+        accountNumber: account.getAccountNumber(),
+        sequence: account.getSequence(),
+        privateKey: account.getPrivateKey(),
+        publicKey: account.getPublicKey(),
+        to: "darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f",
+        amount: 300,
+    });
+
+    console.log(resTransfer);
+
+    // ---------------- Raw method ---------------------------
+
+    let msg = chain.buildMsg({
+        type: "cosmos-sdk/MsgSend",
+        from_address: account.getAddress(),
+        to_address: "darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f",
+        amountDenom: "darc",
+        amount: 100,		// 6 decimal places
+    });
+    let tx = chain.buildTx(msg, {
+        chainId: 'darchub',
+        feeDenom: "darc",
+        fee: 5000,
+        gas: 200000,
+        memo: "",
+        accountNumber: account.getAccountNumber(),
+        sequence: account.getSequence()
+    });
+    const signedTx = chain.signWithAccount(tx, account);
+    const broadcastInfo = await chain.broadcastTx(signedTx);
+    console.log(broadcastInfo);
+}
+
+_();
