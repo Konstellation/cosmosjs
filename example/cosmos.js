@@ -28,39 +28,39 @@ async function _() {
 
     // ---------------- Transfer method method ---------------------------
 
-    let resTransfer = await chain.transfer({
-        from: account.getAddress(),
-        accountNumber: account.getAccountNumber(),
-        sequence: account.getSequence(),
-        privateKey: account.getPrivateKey(),
-        publicKey: account.getPublicKey(),
-        to: "darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f",
-        amount: 300,
-    });
-
-    console.log(resTransfer);
-
-    // ---------------- Raw method ---------------------------
-
-    let msg = chain.buildMsg({
-        type: "cosmos-sdk/MsgSend",
-        from_address: account.getAddress(),
-        to_address: "darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f",
-        amountDenom: "darc",
-        amount: 100,		// 6 decimal places
-    });
-    let tx = chain.buildTx(msg, {
-        chainId: 'darchub',
-        feeDenom: "darc",
-        fee: 5000,
-        gas: 200000,
-        memo: "",
-        accountNumber: account.getAccountNumber(),
-        sequence: account.getSequence()
-    });
-    const signedTx = chain.signWithAccount(tx, account);
-    const broadcastInfo = await chain.broadcastTx(signedTx);
-    console.log(broadcastInfo);
+    // let resTransfer = await chain.transfer({
+    //     from: account.getAddress(),
+    //     accountNumber: account.getAccountNumber(),
+    //     sequence: account.getSequence(),
+    //     privateKey: account.getPrivateKey(),
+    //     publicKey: account.getPublicKey(),
+    //     to: "darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f",
+    //     amount: 300,
+    // });
+    //
+    // console.log(resTransfer);
+    //
+    // // ---------------- Raw method ---------------------------
+    //
+    // let msg = chain.buildMsg({
+    //     type: "cosmos-sdk/MsgSend",
+    //     from_address: account.getAddress(),
+    //     to_address: "darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f",
+    //     denom: "darc",
+    //     amount: 100,		// 6 decimal places
+    // });
+    // let tx = chain.buildTx(msg, {
+    //     chainId: 'darchub',
+    //     feeDenom: "darc",
+    //     fee: 5000,
+    //     gas: 200000,
+    //     memo: "",
+    //     accountNumber: account.getAccountNumber(),
+    //     sequence: account.getSequence()
+    // });
+    // const signedTx = chain.signWithAccount(tx, account);
+    // const broadcastInfo = await chain.broadcastTx(signedTx);
+    // console.log(broadcastInfo);
 }
 
 _();

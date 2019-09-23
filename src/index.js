@@ -8,8 +8,13 @@ const Account = require('./utils/account');
 const get = require('./helpers/request/get');
 const post = require('./helpers/request/post');
 
+const DEFAULT_BECH32_PREFIX = 'darc';
+const DEFAULT_DENOM = 'darc';
+const DEFAULT_FEE = 5000;
+const DEFAULT_GAS = 200000;
+
 class Chain {
-    constructor({url, chainId, bech32MainPrefix, path}) {
+    constructor({url, chainId, bech32MainPrefix = DEFAULT_BECH32_PREFIX, path}) {
         this.url = url;
         this.chainId = chainId;
         this.bech32MainPrefix = bech32MainPrefix;
@@ -35,18 +40,17 @@ class Chain {
 
     async getAccounts(address) {
         let accountsApi = "/auth/accounts/";
-        return await get(this.url + accountsApi + address);
+        return await get(`${this.url}${accountsApi}${address}`);
     }
 
     async getBalance(address) {
         let balanceApi = '/bank/balances/';
-        return await get(this.url + balanceApi + address);
+        return await get(`${this.url}${balanceApi}${address}`);
     }
 
     async broadcastTx(signedTx) {
         let broadcastApi = "/txs";
-
-        return await post(this.url + broadcastApi, signedTx);
+        return await post(`${this.url}${broadcastApi}`, signedTx);
     }
 
     generateAccount() {
@@ -74,12 +78,21 @@ class Chain {
         return this.txSigner.sign(tx, privateKey, publicKey);
     }
 
-    async transferFromAccount({from, to, amount, amountDenom = 'darc', fee = 5000, feeDenom = 'darc', gas = 200000, memo = ''}) {
+    async transferFromAccount({
+                                  from,
+                                  to,
+                                  amount,
+                                  denom = DEFAULT_DENOM,
+                                  fee = DEFAULT_FEE,
+                                  feeDenom = DEFAULT_DENOM,
+                                  gas = DEFAULT_GAS,
+                                  memo = ''
+                              }) {
         let msg = this.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: from.getAddress(),
             to_address: to,
-            amountDenom,
+            denom,
             amount,
         });
         let tx = this.buildTx(msg, {
@@ -95,12 +108,25 @@ class Chain {
         return await this.broadcastTx(signedTx);
     }
 
-    async transfer({from, accountNumber, sequence, privateKey, publicKey, to, amount, amountDenom = 'darc', fee = 5000, feeDenom = 'darc', gas = 200000, memo = ''}) {
+    async transfer({
+                       from,
+                       accountNumber,
+                       sequence,
+                       privateKey,
+                       publicKey,
+                       to,
+                       amount,
+                       denom = DEFAULT_DENOM,
+                       fee = DEFAULT_FEE,
+                       feeDenom = DEFAULT_DENOM,
+                       gas = DEFAULT_GAS,
+                       memo = ''
+                   }) {
         let msg = this.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: from,
             to_address: to,
-            amountDenom,
+            denom,
             amount,
         });
         let tx = this.buildTx(msg, {
