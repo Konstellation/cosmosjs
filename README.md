@@ -34,7 +34,7 @@ CosmosJS supports browserify.
 #### NodeJS
 
 ```js
-const sdk = require("@konstellation/cosmosjs");
+    const sdk = require("@konstellation/cosmosjs");
 ```
 
 #### Browser
@@ -124,24 +124,24 @@ or
 
 #### - Transfer method
 ```js
-const res = await chain.transfer({
-        from: account.getAddress(),
-        accountNumber: account.getAccountNumber(),
-        sequence: account.getSequence(),
-        privateKey: account.getPrivateKey(),
-        publicKey: account.getPublicKey(),
-        to: "...",
-        amount: 300,
-    });
+    const res = await chain.transfer({
+            from: account.getAddress(),
+            accountNumber: account.getAccountNumber(),
+            sequence: account.getSequence(),
+            privateKey: account.getPrivateKey(),
+            publicKey: account.getPublicKey(),
+            to: "...",
+            amount: 300,
+        });
 ```
 
 #### - TransferFromAccount method
 ```js
-const res = await chain.transferFromAccount({
-        from: account,
-        to: '...',
-        amount: 200
-    });
+    const res = await chain.transferFromAccount({
+            from: account,
+            to: '...',
+            amount: 200
+        });
 ```
 
 ### Fetch transactions where the address is a recipient
@@ -187,13 +187,13 @@ Genesis transactions are returned if the height parameter is set to zero, otherw
 
 - cosmos-sdk/MsgSend
 ```js
-const stdSignMsg = chain.buildMsg({
-      type: "cosmos-sdk/MsgSend",
-      from_address: address,
-      to_address: "...",
-      denom: "darc",
-      amount: 5000,
-    });
+    const stdSignMsg = chain.buildMsg({
+          type: "cosmos-sdk/MsgSend",
+          from_address: address,
+          to_address: "...",
+          denom: "darc",
+          amount: 5000,
+        });
 ```
 
 ## Documentation
