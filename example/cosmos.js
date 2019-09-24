@@ -6,6 +6,9 @@ async function _() {
         chainId: 'darchub',
     });
 
+    const nodeInfo = await chain.fetchNodeInfo();
+    console.log(nodeInfo);
+
     const mnemonic = "idle practice stadium maple cake traffic input zoo inherit tip mixture upgrade squirrel photo cabbage result limb consider foam tank sad improve grass wolf";
     let account = chain.recoverAccount(mnemonic);
 
@@ -45,13 +48,13 @@ async function _() {
 
     // ---------------- TransferFromAccount method ---------------------------
 
-    const resTransferFromAccount = await chain.transferFromAccount({
-        from: account,
-        to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
-        amount: 200
-    });
-
-    console.log(resTransferFromAccount);
+    // const resTransferFromAccount = await chain.transferFromAccount({
+    //     from: account,
+    //     to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
+    //     amount: 200
+    // });
+    //
+    // console.log(resTransferFromAccount);
 
     // ---------------- Transfer method method ---------------------------
 

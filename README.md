@@ -55,6 +55,11 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
     });
 ```
 
+### Fetch node info
+```js
+    const nodeInfo = chain.fetchNodeInfo()
+```
+
 ### Generate Cosmos account
 ```js
     let account = chain.generateAccount();
