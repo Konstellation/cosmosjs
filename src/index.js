@@ -80,6 +80,7 @@ class Chain {
     /**
      * BroadcastTx broadcasts a transactions either synchronously or asynchronously
      * based on the context parameters.
+     * "block"(return after tx commit), "sync"(return afer CheckTx) and "async"(return right away).
      *
      * @param signedTx
      * @param mode sync | async | block
