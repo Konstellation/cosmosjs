@@ -21,6 +21,7 @@ module.exports = class Account {
         this.seed = bip39.mnemonicToSeed(this.mnemonic);
         this.node = bip32.fromSeed(this.seed);
         this.child = this.node.derivePath(this.path);
+
         return this;
     }
 
@@ -29,11 +30,13 @@ module.exports = class Account {
         this.seed = bip39.mnemonicToSeed(this.mnemonic);
         this.node = bip32.fromSeed(this.seed);
         this.child = this.node.derivePath(this.path);
+
         return this;
     }
 
     getAddress() {
         const words = bech32.toWords(this.child.identifier);
+
         return bech32.encode(this.bech32MainPrefix, words);
     }
 
@@ -49,6 +52,7 @@ module.exports = class Account {
 
     getPublicKey() {
         const pubKeyByte = secp256k1.publicKeyCreate(this.child.privateKey);
+
         return Buffer.from(pubKeyByte, 'binary').toString('base64');
     }
 

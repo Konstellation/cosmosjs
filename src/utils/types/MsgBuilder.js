@@ -11,6 +11,7 @@ module.exports = class MsgBuilder {
 
     registerMsgTypes() {
         this.addMsgType(MsgSend);
+
         return this
     }
 
