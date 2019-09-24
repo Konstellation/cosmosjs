@@ -51,13 +51,17 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ```js
     const chain = sdk.network({
         url: "http://127.0.0.1:1317",
-        chainId: 'darchub',
     });
 ```
 
 ### Fetch node info
 ```js
     const nodeInfo = chain.fetchNodeInfo()
+```
+
+### Config chain to perform transactions
+```js
+     chain.updateConfig(nodeInfo);
 ```
 
 ### Generate Cosmos account
@@ -68,7 +72,7 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ### Recover Cosmos account from mnemonic
 ```js
     const mnemonic = "...";
-    let account = chain.recoverAccount(mnemonic);
+    const account = chain.recoverAccount(mnemonic);
 ```
 
 ### Get address
@@ -84,7 +88,7 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ### Fetch account info by address
 ```js
     const accountInfo = await chain.fetchAccount(address);
-    account = account.updateInfo(accountInfo.result.value);
+    account.updateInfo(accountInfo.result.value);
 ```
 
 ### Transfer DARC to destination address. 

@@ -1,6 +1,6 @@
 {
   "name": "@konstellation/cosmosjs",
-  "version": "1.0.0",
+  "version": "1.0.2",
   "description": "A JavasSript Open Source Library for Konstellation Network",
   "main": "./src/index.js",
   "engines": {

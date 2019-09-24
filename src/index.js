@@ -26,9 +26,6 @@ class Chain {
         if (!this.url) {
             throw new Error("url object was not set or invalid")
         }
-        if (!this.chainId) {
-            throw new Error("chainId object was not set or invalid")
-        }
         if (!this.bech32MainPrefix) {
             throw new Error("bech32MainPrefix object was not set or invalid")
         }
@@ -40,7 +37,17 @@ class Chain {
         this.txBuilder = new TxBuilder();
     }
 
+    updateConfig({node_info}) {
+        this.chainId = node_info.network;
+
+        return this
+    }
+
     // --------------- api ------------------
+
+    async test() {
+        return get(this.url);
+    }
 
     /**
      * Perform custom request
@@ -193,7 +200,7 @@ class Chain {
     async fetchNodeInfo() {
         const nodeInfoApi = '/node_info';
 
-        return await get(`${this.url}${nodeInfoApi}`)
+        return await get(`${this.url}${nodeInfoApi}`);
     }
 
     // --------------- api ------------------
@@ -234,6 +241,10 @@ class Chain {
                                   gas = DEFAULT_GAS,
                                   memo = ''
                               }) {
+        if (!this.chainId) {
+            throw new Error("chainId object was not set or invalid");
+        }
+
         const msg = this.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: from.getAddress(),
@@ -268,6 +279,10 @@ class Chain {
                        gas = DEFAULT_GAS,
                        memo = ''
                    }) {
+        if (!this.chainId) {
+            throw new Error("chainId object was not set or invalid");
+        }
+
         const msg = this.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: from,

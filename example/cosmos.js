@@ -3,28 +3,31 @@ const sdk = require("../src");
 async function _() {
     const chain = sdk.network({
         url: "http://127.0.0.1:1317",
-        chainId: 'darchub',
     });
 
     const nodeInfo = await chain.fetchNodeInfo();
-    console.log(nodeInfo);
+    chain.updateConfig(nodeInfo);
+    console.log(chain);
+
+    // const i = await chain.test();
+    // console.log(i);
+    //
 
     const mnemonic = "idle practice stadium maple cake traffic input zoo inherit tip mixture upgrade squirrel photo cabbage result limb consider foam tank sad improve grass wolf";
-    let account = chain.recoverAccount(mnemonic);
-
+    const account = chain.recoverAccount(mnemonic);
     const address = account.getAddress();
     const accountInfo = await chain.fetchAccount(address);
-    account = account.updateInfo(accountInfo.result.value);
+    account.updateInfo(accountInfo.result.value);
     console.log(account.getAddress());
 
-    // const balanceInfo = await chain.fetchBalance(address);
-    // console.log(balanceInfo);
-
-    let txsInfo = await chain.fetchInboundTransactions(address, 100);
-    console.log(txsInfo.txs.length);
-
-    txsInfo = await chain.fetchOutboundTransactions(address, 100);
-    console.log(txsInfo.txs.length);
+    // // const balanceInfo = await chain.fetchBalance(address);
+    // // console.log(balanceInfo);
+    //
+    // let txsInfo = await chain.fetchInboundTransactions(address, 100);
+    // console.log(txsInfo.txs.length);
+    //
+    // txsInfo = await chain.fetchOutboundTransactions(address, 100);
+    // console.log(txsInfo.txs.length);
 
     // const txInfo = await chain.fetchTransaction('FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5');
     // console.log(txInfo);
