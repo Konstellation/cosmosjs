@@ -186,18 +186,6 @@ class Chain {
     }
 
     /**
-     * Fetch the supply of a single denom
-     *
-     * @param       denom       Token denom
-     * @returns {Promise<*>}
-     */
-    async fetchSupplyDenom(denom) {
-        const supplyApi = '/supply/total';
-
-        return await get(`${this.url}${supplyApi}${denom ? '/' + denom : ''}`)
-    }
-
-    /**
      * Fetch node info
      *
      * @returns {Promise<*>}
