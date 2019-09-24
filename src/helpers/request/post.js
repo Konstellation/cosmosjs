@@ -1,12 +1,8 @@
-const fetch = require("node-fetch");
+const req = require('./req');
 
-module.exports = async function post(url, data) {
-    return await fetch(url, {
+module.exports = async function post(url, params) {
+    return await req(url, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(data)
+        ...params
     })
-        .then(response => response.json())
 };

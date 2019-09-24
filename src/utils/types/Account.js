@@ -3,11 +3,15 @@ const bip32 = require('bip32');
 const bech32 = require('bech32');
 const secp256k1 = require('secp256k1');
 const bitcoinjs = require('bitcoinjs-lib');
+const {
+    DEFAULT_BECH32_PREFIX,
+    DEFAULT_KEY_PATH
+} = require('../constants');
 
 module.exports = class Account {
     constructor(path, bech32MainPrefix) {
-        this.path = path || "m/44'/118'/0'/0/0";
-        this.bech32MainPrefix = bech32MainPrefix || "darc";
+        this.path = path || DEFAULT_KEY_PATH;
+        this.bech32MainPrefix = bech32MainPrefix || DEFAULT_BECH32_PREFIX;
         this.sequence = '';
         this.accountNumber = '';
     }

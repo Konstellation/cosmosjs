@@ -6,18 +6,22 @@ const Account = require('./utils/types/Account');
 
 const get = require('./helpers/request/get');
 const post = require('./helpers/request/post');
+const req = require('./helpers/request/req');
 
-const DEFAULT_BECH32_PREFIX = 'darc';
-const DEFAULT_DENOM = 'darc';
-const DEFAULT_FEE = 5000;
-const DEFAULT_GAS = 200000;
+const {
+    DEFAULT_BECH32_PREFIX,
+    DEFAULT_DENOM,
+    DEFAULT_FEE,
+    DEFAULT_GAS,
+    DEFAULT_KEY_PATH
+} = require('./utils/constants');
 
 class Chain {
-    constructor({url, chainId, bech32MainPrefix = DEFAULT_BECH32_PREFIX, path}) {
+    constructor({url, chainId, bech32MainPrefix = DEFAULT_BECH32_PREFIX, path = DEFAULT_KEY_PATH}) {
         this.url = url;
         this.chainId = chainId;
         this.bech32MainPrefix = bech32MainPrefix;
-        this.path = path || "m/44'/118'/0'/0/0";
+        this.path = path;
 
         if (!this.url) {
             throw new Error("url object was not set or invalid")
@@ -38,61 +42,146 @@ class Chain {
 
     // --------------- api ------------------
 
-    async request({method, uri, path, params, data}) {
-        let url = new URL(`${this.url}${uri}${path ? '/' + path : ''}`);
-        params && Object.keys(params).forEach(param => {
-            url.searchParams.append(param, params[param])
-        });
-        if (method) {
-            return get(url.toString());
-        } else {
-            return post(url.toString(), data);
-        }
+    /**
+     * Perform custom request
+     *
+     * @param uri
+     * @param reqData
+     * @returns {Promise<*>}
+     */
+    async request(uri, reqData) {
+        return req(`${this.url}${uri}`, reqData)
     }
 
+    /**
+     * Fetch account by address
+     *
+     * @param address
+     * @returns {Promise<*>}
+     */
     async fetchAccount(address) {
-        let accountsApi = "/auth/accounts/";
+        const accountsApi = "/auth/accounts/";
 
         return await get(`${this.url}${accountsApi}${address}`);
     }
 
+    /**
+     * Fetch balance of account by address
+     *
+     * @param address
+     * @returns {Promise<*>}
+     */
     async fetchBalance(address) {
-        let balanceApi = '/bank/balances/';
+        const balanceApi = '/bank/balances/';
 
         return await get(`${this.url}${balanceApi}${address}`);
     }
 
+    /**
+     * BroadcastTx broadcasts a transactions either synchronously or asynchronously
+     * based on the context parameters.
+     *
+     * @param signedTx
+     * @param mode sync | async | block
+     * @returns {Promise<*>}
+     */
     async broadcastTx(signedTx, mode = 'sync') {
-        let broadcastApi = "/txs";
+        const broadcastApi = "/txs";
 
         return await post(`${this.url}${broadcastApi}`, {
-            tx: signedTx,
-            mode
+            data: {
+                tx: signedTx,
+                mode
+            }
         });
     }
 
+    /**
+     * Fetch a transaction by hash in a committed block.
+     *
+     * @param hash
+     * @returns {Promise<*>}
+     */
     async fetchTransaction(hash) {
-        let txApi = '/txs/';
+        const txApi = '/txs/';
 
         return await get(`${this.url}${txApi}${hash}`)
     }
 
+    /**
+     * Fetch transaction where the address is a sender
+     *
+     * @param address
+     * @param limit
+     * @returns {Promise<*>}
+     */
     async fetchOutboundTransactions(address, limit = 30) {
-        let txApi = '/txs';
+        const txApi = '/txs';
 
-        return await get(`${this.url}${txApi}?message.action=send&message.sender=${address}&limit=${limit}`)
+        return await get(`${this.url}${txApi}`, {
+            query: {
+                'message.action': 'send',
+                'message.sender': address,
+                limit
+            }
+        });
     }
 
+    /**
+     * Fetch transactions where the address is a recipient
+     *
+     * @param address
+     * @param limit
+     * @returns {Promise<*>}
+     */
     async fetchInboundTransactions(address, limit = 30) {
-        let txApi = '/txs';
+        const txApi = '/txs';
 
-        return await get(`${this.url}${txApi}?transfer.recipient=${address}&limit=${limit}`)
+        return await get(`${this.url}${txApi}`, {
+            query: {
+                'transfer.recipient': address,
+                limit
+            }
+        });
     }
 
-    async fetchTotalCoins(denom) {
-        let supplyApi = '/supply/total/';
+    /**
+     * Search transactions.
+     * Genesis transactions are returned if the height parameter is set to zero,
+     * otherwise the transactions are searched for by events
+     *
+     * @param query
+     * @returns {Promise<*>}
+     */
+    async searchTransactions(query) {
+        const txApi = '/txs';
 
-        return await get(`${this.url}${supplyApi}${denom ? denom : ''}`);
+        return await get(`${this.url}${txApi}`, {
+            query
+        })
+    }
+
+    /**
+     * Fetch the total supply of coins
+     *
+     * @returns {Promise<*>}
+     */
+    async fetchTotalSupply() {
+        const supplyApi = '/supply/total';
+
+        return await get(`${this.url}${supplyApi}`);
+    }
+
+    /**
+     * Fetch the supply of a single denom
+     *
+     * @param       denom       Token denom
+     * @returns {Promise<*>}
+     */
+    async fetchSupplyDenom(denom) {
+        const supplyApi = '/supply/total';
+
+        return await get(`${this.url}${supplyApi}${denom ? '/' + denom : ''}`)
     }
 
     // --------------- api ------------------
@@ -106,7 +195,8 @@ class Chain {
     }
 
     buildMsg(input) {
-        let msgType = this.msgBuilder.getMsgType(input.type);
+        const msgType = this.msgBuilder.getMsgType(input.type);
+
         return msgType.build(input)
     }
 
@@ -132,14 +222,14 @@ class Chain {
                                   gas = DEFAULT_GAS,
                                   memo = ''
                               }) {
-        let msg = this.buildMsg({
+        const msg = this.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: from.getAddress(),
             to_address: to,
             denom,
             amount,
         });
-        let signMsg = this.buildSignMsg(msg, {
+        const signMsg = this.buildSignMsg(msg, {
             chainId: this.chainId,
             feeDenom,
             fee,
@@ -166,14 +256,14 @@ class Chain {
                        gas = DEFAULT_GAS,
                        memo = ''
                    }) {
-        let msg = this.buildMsg({
+        const msg = this.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: from,
             to_address: to,
             denom,
             amount,
         });
-        let tx = this.buildSignMsg(msg, {
+        const tx = this.buildSignMsg(msg, {
             chainId: this.chainId,
             feeDenom,
             fee,

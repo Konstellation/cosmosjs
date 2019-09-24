@@ -1,9 +1,4 @@
-<p align="center">
-  <a href="https://www.cosmostation.io" target="_blank" rel="noopener noreferrer"><img width="100" src="https://user-images.githubusercontent.com/20435620/55696624-d7df2e00-59f8-11e9-9126-edf9a40b11a8.png" alt="Cosmostation logo"></a>
-</p>
-<h1 align="center">
-    CosmosJS - Cosmos JavaScript Library 
-</h1>
+# CosmosJS - Cosmos JavaScript Library 
 
 *:star: Developed / Developing by [Konstellation](https://github.com/konstellation/) on [CosmosJS](https://github.com/cosmostation/cosmosjs/)*
 
@@ -39,12 +34,12 @@ CosmosJS supports browserify.
 #### NodeJS
 
 ```js
-const cosmosjs = require("@konstellation/cosmosjs");
+const sdk = require("@konstellation/cosmosjs");
 ```
 
 #### Browser
 
-```js
+```html
 <script src='js/cosmosjs-bundle.js'></script>
 ```
 
@@ -55,10 +50,8 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ### Init network
 ```js
     const chain = sdk.network({
-        url: lcdUrl,
+        url: "http://127.0.0.1:1317",
         chainId: 'darchub',
-        bech32MainPrefix: "darc",
-        path: "m/44'/118'/0'/0/0"
     });
 ```
 
@@ -78,14 +71,14 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
     const address = account.getAddress();
 ```
 
-### Get balance
+### Fetch balance of account by address
 ```js
-    let balance = await chain.fetchBalance(address);
+    const balance = await chain.fetchBalance(address);
 ```
 
-### Get account info
+### Fetch account info by address
 ```js
-    let accountInfo = await chain.fetchAccount(address);
+    const accountInfo = await chain.fetchAccount(address);
     account = account.updateInfo(accountInfo.result.value);
 ```
 
@@ -95,7 +88,7 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ##### Build message
 Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
 ```js
-     let msg = chain.buildMsg({
+     const msg = chain.buildMsg({
             type: "cosmos-sdk/MsgSend",
             from_address: account.getAddress(),
             to_address: "...",
@@ -106,7 +99,7 @@ Make sure to input proper type, account number, and sequence of the cosmos accou
 
 ##### Build transaction
 ```js
-    let signMsg = chain.buildSignMsg(msg, {
+    const signMsg = chain.buildSignMsg(msg, {
         chainId: 'darchub',
         feeDenom: "darc",
         fee: 5000,
@@ -131,7 +124,7 @@ or
 
 #### - Transfer method
 ```js
-let res = await chain.transfer({
+const res = await chain.transfer({
         from: account.getAddress(),
         accountNumber: account.getAccountNumber(),
         sequence: account.getSequence(),
@@ -144,33 +137,49 @@ let res = await chain.transfer({
 
 #### - TransferFromAccount method
 ```js
-let res = await chain.transferFromAccount({
+const res = await chain.transferFromAccount({
         from: account,
         to: '...',
         amount: 200
     });
 ```
 
-### Fetch transactions where address is recipient
+### Fetch transactions where the address is a recipient
 ```js
-    let txsInfo = await chain.fetchInboundTransactions(address, 100);
+    const txsInfo = await chain.fetchInboundTransactions(address, 100);
 ```
 
-### Fetch transaction where address is sender
+### Fetch transaction where the address is a sender
 ```js
-    let txsInfo = await chain.fetchOutboundTransactions(address, 100);
+    const txsInfo = await chain.fetchOutboundTransactions(address, 100);
 ```
 
-### Fetch coin info
+### Fetch a transaction by hash in a committed block
 ```js
-    let coinsInfo = await chain.fetchTotalCoins();
+    const txInfo = await chain.fetchTransaction('FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5');
 ```
 
-### Fetch custom request
+### Search transactions 
+Genesis transactions are returned if the height parameter is set to zero, otherwise the transactions are searched for by events
 ```js
-    let node_info = await chain.request({
-        method: 'GET',
-        uri: '/node_info',
+    const txs = await chain.searchTransactions({height: 0});
+```
+
+### Fetch the total supply of coins
+```js
+    const coinsInfo = await chain.fetchTotalSupply();
+```
+
+### Fetch the supply of a single denom
+```js
+    const coinsInfo = await chain.fetchSupplyDenom('darc');
+```
+
+### Perform custom request
+```js
+    const node_info = await chain.request('/node_info');
+    const req = await chain.request('/txs', {
+        path: '/FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5'
     });
 ```
 
@@ -178,145 +187,13 @@ let res = await chain.transferFromAccount({
 
 - cosmos-sdk/MsgSend
 ```js
-let stdSignMsg = chain.buildMsg({
+const stdSignMsg = chain.buildMsg({
       type: "cosmos-sdk/MsgSend",
       from_address: address,
       to_address: "...",
       denom: "darc",
       amount: 5000,
-      feeDenom: "darc",
-      fee: 5000,
-      gas: 200000,
-      memo: "",
-      account_number: account_info.result.value.account_number,
-      sequence: account_info.result.value.sequence
     });
-```
-- cosmos-sdk/MsgDelegate
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgDelegate",
-	delegator_address: address,
-	validator_address: "cosmosvaloper1clpqr4nrk4khgkxj78fcwwh6dl3uw4epsluffn",
-	denom: "uatom",
-	amount: 1000000,
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgUndelegate
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgUndelegate",
-	delegator_address: address,
-	validator_address: "cosmosvaloper1clpqr4nrk4khgkxj78fcwwh6dl3uw4epsluffn",
-	denom: "uatom",
-	amount: 1000000,
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgWithdrawDelegationReward
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgWithdrawDelegationReward",
-	delegator_address: address,
-	validator_address: "cosmosvaloper1clpqr4nrk4khgkxj78fcwwh6dl3uw4epsluffn",
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgSubmitProposal
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgSubmitProposal",
-	title: "Activate the Community Pool",
-	description: "Enable governance to spend funds from the community pool. Full proposal: https://ipfs.io/ipfs/QmNsVCsyRmEiep8rTQLxVNdMHm2uiZkmaSHCR6S72Y1sL1",
-	initialDepositDenom: "uatom",
-	initialDepositAmount: 1000000,
-	proposal_type: "Text",
-	proposer: address,
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgDeposit
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgDeposit",
-	depositor: address,
-	proposal_id: 1,
-	denom: "uatom",
-	amount: 1000000,
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgVote
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgVote",
-	voter: address,
-	proposal_id: 1,
-	option: "Yes",	// Yes, No, NowithVeto, Abstain
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgBeginRedelegate
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgBeginRedelegate",
-	delegator_address: address,
-	validator_src_address: "cosmosvaloper1clpqr4nrk4khgkxj78fcwwh6dl3uw4epsluffn",
-	validator_dst_address: "cosmosvaloper1ec3p6a75mqwkv33zt543n6cnxqwun37rr5xlqv",
-	denom: "uatom",
-	amount: 1000000,
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: data.value.account_number,
-	sequence: account_info.result.value.sequence
-});
-```
-- cosmos-sdk/MsgModifyWithdrawAddress
-```js
-stdSignMsg = cosmos.NewStdMsg({
-	type: "cosmos-sdk/MsgModifyWithdrawAddress",
-	delegator_address: address,
-	withdraw_address: "cosmos133mtfk63fuac5e2npfgcktwufnty2536wedfal",
-	feeDenom: "uatom",
-	fee: 5000,
-	gas: 200000,
-	memo: "",
-	account_number: account_info.result.value.account_number,
-	sequence: account_info.result.value.sequence
-});
 ```
 
 ## Documentation
