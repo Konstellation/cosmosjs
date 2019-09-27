@@ -1,5 +1,5 @@
 const moduleName = 'auth';
 
-module.exports = {
-    name: moduleName
+export default {
+    name: moduleName,
 };

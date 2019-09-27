@@ -1,5 +1,14 @@
-module.exports = class StdSignMsg {
-    constructor({msgs, chainId, accountNumber, sequence, memo, fee, feeDenom, gas}) {
+export default class StdSignMsg {
+    constructor ({
+                     msgs,
+                     chainId,
+                     accountNumber,
+                     sequence,
+                     memo,
+                     fee,
+                     feeDenom,
+                     gas,
+                 }) {
         return {
             chain_id: String(chainId),
             account_number: String(accountNumber),
@@ -8,13 +17,13 @@ module.exports = class StdSignMsg {
                 amount: [
                     {
                         amount: String(fee),
-                        denom: String(feeDenom)
-                    }
+                        denom: String(feeDenom),
+                    },
                 ],
-                gas: String(gas)
+                gas: String(gas),
             },
             msgs,
             memo: String(memo),
-        }
+        };
     }
-};
+}

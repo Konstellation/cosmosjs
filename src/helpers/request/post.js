@@ -1,8 +1,8 @@
-const req = require('./req');
+import req from './req';
 
-module.exports = async function post(url, params) {
-    return await req(url, {
+export default function post (url, params, log) {
+    return req(url, {
         method: 'POST',
-        ...params
-    })
-};
+        ...params,
+    }, log);
+}

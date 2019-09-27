@@ -1,5 +1,5 @@
 const moduleName = 'bank';
 
-module.exports = {
-    name: moduleName
+export default {
+    name: moduleName,
 };

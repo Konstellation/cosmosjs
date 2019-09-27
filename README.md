@@ -153,6 +153,16 @@ or
         });
 ```
 
+### Fetch total transactions count
+```js
+    const txsInfo = await chain.fetchTotalTransactionsCount();
+```
+
+### Fetch all transactions
+```js
+    const txsInfo = await chain.fetchAllTransactions();
+```
+
 ### Fetch transactions where the address is a recipient
 ```js
     const txsInfo = await chain.fetchInboundTransactions(address, 100);

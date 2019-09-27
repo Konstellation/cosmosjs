@@ -1,53 +1,57 @@
-'use strict';
+import Account from './utils/types/Account';
+import TxBuilder from './utils/types/TxBuilder';
+import MsgBuilder from './utils/types/MsgBuilder';
 
-const MsgBuilder = require('./utils/types/MsgBuilder');
-const TxBuilder = require('./utils/types/TxBuilder');
-const Account = require('./utils/types/Account');
+import get from './helpers/request/get';
+import post from './helpers/request/post';
+import req from './helpers/request/req';
 
-const get = require('./helpers/request/get');
-const post = require('./helpers/request/post');
-const req = require('./helpers/request/req');
-
-const {
+import {
     DEFAULT_BECH32_PREFIX,
     DEFAULT_DENOM,
     DEFAULT_FEE,
     DEFAULT_GAS,
-    DEFAULT_KEY_PATH
-} = require('./utils/constants');
+    DEFAULT_KEY_PATH,
+} from './utils/constants';
 
 class Chain {
-    constructor({url, chainId, bech32MainPrefix = DEFAULT_BECH32_PREFIX, path = DEFAULT_KEY_PATH}) {
-        this.url = url;
+    constructor ({
+                     apiUrl,
+                     nodeUrl,
+                     chainId,
+                     bech32MainPrefix = DEFAULT_BECH32_PREFIX,
+                     path = DEFAULT_KEY_PATH,
+                 }) {
+        this.apiUrl = apiUrl;
+        this.nodeUrl = nodeUrl;
         this.chainId = chainId;
         this.bech32MainPrefix = bech32MainPrefix;
         this.path = path;
 
-        if (!this.url) {
-            throw new Error("url object was not set or invalid")
+        if (!this.apiUrl) {
+            throw new Error('apiUrl object was not set or invalid');
+        }
+        if (!this.nodeUrl) {
+            throw new Error('nodeUrl object was not set or invalid');
         }
         if (!this.bech32MainPrefix) {
-            throw new Error("bech32MainPrefix object was not set or invalid")
+            throw new Error('bech32MainPrefix object was not set or invalid');
         }
         if (!this.path) {
-            throw new Error("path object was not set or invalid")
+            throw new Error('path object was not set or invalid');
         }
 
         this.msgBuilder = new MsgBuilder().registerMsgTypes();
         this.txBuilder = new TxBuilder();
     }
 
-    updateConfig({node_info}) {
+    updateConfig ({node_info}) {
         this.chainId = node_info.network;
 
-        return this
+        return this;
     }
 
     // --------------- api ------------------
-
-    async test() {
-        return get(this.url);
-    }
 
     /**
      * Perform custom request
@@ -56,8 +60,51 @@ class Chain {
      * @param reqData
      * @returns {Promise<*>}
      */
-    async request(uri, reqData) {
-        return req(`${this.url}${uri}`, reqData)
+    request (uri, reqData) {
+        return req(this.apiUrl, {
+            path: uri,
+            ...reqData,
+        });
+    }
+
+    /**
+     * Fetch node info
+     *
+     * @returns {Promise<*>}
+     */
+    fetchNodeInfo () {
+        return get(this.apiUrl, {
+            path: '/node_info',
+        });
+    }
+
+    /**
+     * Fetch blockchain info
+     *
+     * @param query
+     * @returns {Promise<*>}
+     */
+    fetchBlockchainInfo (query) {
+        return get(this.nodeUrl, {
+            path: '/blockchain',
+            query,
+        });
+    }
+
+    /**
+     * Fetch block info
+     *
+     * @param height
+     * @returns {Promise<*>}
+     */
+    fetchBlockInfo (height) {
+        if (!height) {
+            throw new Error('height was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/blocks/${height}`,
+        });
     }
 
     /**
@@ -66,10 +113,14 @@ class Chain {
      * @param address
      * @returns {Promise<*>}
      */
-    async fetchAccount(address) {
-        const accountsApi = "/auth/accounts/";
+    fetchAccount (address) {
+        if (!address) {
+            throw new Error('address was not set or invalid');
+        }
 
-        return await get(`${this.url}${accountsApi}${address}`);
+        return get(this.apiUrl, {
+            path: `/auth/accounts/${address}`,
+        });
     }
 
     /**
@@ -78,30 +129,78 @@ class Chain {
      * @param address
      * @returns {Promise<*>}
      */
-    async fetchBalance(address) {
-        const balanceApi = '/bank/balances/';
+    fetchAccountBalance (address) {
+        if (!address) {
+            throw new Error('address was not set or invalid');
+        }
 
-        return await get(`${this.url}${balanceApi}${address}`);
+        return get(this.apiUrl, {
+            path: `/bank/balances/${address}`,
+        });
     }
 
     /**
-     * BroadcastTx broadcasts a transactions either synchronously or asynchronously
-     * based on the context parameters.
-     * "block"(return after tx commit), "sync"(return afer CheckTx) and "async"(return right away).
+     * Fetch all transaction
      *
-     * @param signedTx
-     * @param mode sync | async | block
+     * @param params
      * @returns {Promise<*>}
      */
-    async broadcastTx(signedTx, mode = 'sync') {
-        const broadcastApi = "/txs";
+    async fetchAllTransactions (params = {}) {
+        const totalCount = await this.fetchTotalTransactionsCount(params);
 
-        return await post(`${this.url}${broadcastApi}`, {
-            data: {
-                tx: signedTx,
-                mode
-            }
+        return this.fetchTransactions({
+            limit: totalCount,
+            ...params,
         });
+    }
+
+    /**
+     * Fetch all transactions
+     *
+     * @param params
+     * @returns {Promise<*>}
+     */
+    fetchTransactions (params = {}) {
+        let {action} = params;
+        if (!action) {
+            action = 'send';
+        }
+        delete params.action;
+
+        return get(this.apiUrl, {
+            path: '/txs',
+            query: {
+                'message.action': action,
+                ...params,
+            },
+        });
+    }
+
+    /**
+     * Fetch all transaction
+     *
+     * @param limit
+     * @returns {Promise<*>}
+     */
+    async fetchLastTransactions (limit = 5) {
+        const totalCount = await this.fetchTotalTransactionsCount();
+        const page = Math.ceil(totalCount / limit) || 1;
+
+        return this.fetchTransactions({
+            limit,
+            page,
+        });
+    }
+
+    /**
+     * Fetch total transactions count
+     *
+     * @param params
+     * @returns {Promise<*>}
+     */
+    async fetchTotalTransactionsCount (params = {}) {
+        const {total_count} = await this.fetchTransactions(params);
+        return total_count;
     }
 
     /**
@@ -110,28 +209,35 @@ class Chain {
      * @param hash
      * @returns {Promise<*>}
      */
-    async fetchTransaction(hash) {
-        const txApi = '/txs/';
+    fetchTransaction (hash) {
+        if (!hash) {
+            throw new Error('hash was not set or invalid');
+        }
 
-        return await get(`${this.url}${txApi}${hash}`)
+        return get(this.apiUrl, {
+            path: `/txs/${hash}`,
+        });
     }
 
     /**
      * Fetch transaction where the address is a sender
      *
      * @param address
-     * @param limit
+     * @param params
      * @returns {Promise<*>}
      */
-    async fetchOutboundTransactions(address, limit = 30) {
-        const txApi = '/txs';
+    fetchOutboundTransactions (address, params = {limit: 30}) {
+        if (!address) {
+            throw new Error('address was not set or invalid');
+        }
 
-        return await get(`${this.url}${txApi}`, {
+        return get(this.apiUrl, {
+            path: '/txs',
             query: {
                 'message.action': 'send',
                 'message.sender': address,
-                limit
-            }
+                ...params,
+            },
         });
     }
 
@@ -139,17 +245,20 @@ class Chain {
      * Fetch transactions where the address is a recipient
      *
      * @param address
-     * @param limit
+     * @param params
      * @returns {Promise<*>}
      */
-    async fetchInboundTransactions(address, limit = 30) {
-        const txApi = '/txs';
+    fetchInboundTransactions (address, params = {limit: 30}) {
+        if (!address) {
+            throw new Error('address was not set or invalid');
+        }
 
-        return await get(`${this.url}${txApi}`, {
+        return get(this.apiUrl, {
+            path: '/txs',
             query: {
                 'transfer.recipient': address,
-                limit
-            }
+                ...params,
+            },
         });
     }
 
@@ -161,12 +270,30 @@ class Chain {
      * @param query
      * @returns {Promise<*>}
      */
-    async searchTransactions(query) {
-        const txApi = '/txs';
+    searchTransactions (query) {
+        return get(this.apiUrl, {
+            path: '/txs',
+            query,
+        });
+    }
 
-        return await get(`${this.url}${txApi}`, {
-            query
-        })
+    /**
+     * BroadcastTx broadcasts a transactions either synchronously or asynchronously
+     * based on the context parameters.
+     * "block"(return after tx commit), "sync"(return afer CheckTx) and "async"(return right away).
+     *
+     * @param signedTx
+     * @param mode sync | async | block
+     * @returns {Promise<*>}
+     */
+    broadcastTx (signedTx, mode = 'sync') {
+        return post(this.apiUrl, {
+            path: '/txs',
+            data: {
+                tx: signedTx,
+                mode,
+            },
+        });
     }
 
     /**
@@ -174,10 +301,10 @@ class Chain {
      *
      * @returns {Promise<*>}
      */
-    async fetchTotalSupply() {
-        const supplyApi = '/supply/total';
-
-        return await get(`${this.url}${supplyApi}`);
+    fetchTotalSupply () {
+        return get(this.apiUrl, {
+            path: '/supply/total',
+        });
     }
 
     /**
@@ -186,105 +313,185 @@ class Chain {
      * @param       denom       Token denom
      * @returns {Promise<*>}
      */
-    async fetchSupplyDenom(denom) {
-        const supplyApi = '/supply/total';
+    fetchSupplyDenom (denom) {
+        if (!denom) {
+            throw new Error('denom was not set or invalid');
+        }
 
-        return await get(`${this.url}${supplyApi}${denom ? '/' + denom : ''}`)
+        return get(this.apiUrl, {
+            path: `/supply/total/${denom}`,
+        });
     }
 
     /**
-     * Fetch node info
+     * Fetch staking pool
      *
      * @returns {Promise<*>}
      */
-    async fetchNodeInfo() {
-        const nodeInfoApi = '/node_info';
+    fetchStakingPool () {
+        return get(this.apiUrl, {
+            path: '/staking/pool',
+        });
+    }
 
-        return await get(`${this.url}${nodeInfoApi}`);
+    /**
+     * Fetch staking validators
+     *
+     * @returns {Promise<*>}
+     */
+    fetchStakingValidators (status) {
+        if (!status) {
+            throw new Error('status was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: '/staking/validators',
+            query: {
+                status,
+            },
+        });
+    }
+
+    /**
+     * Fetch validator details
+     *
+     * @param address
+     * @returns {Promise<*>}
+     */
+    fetchValidatorDetails (address) {
+        if (!address) {
+            throw new Error('address was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/validators/${address}`,
+        });
+    }
+
+    /**
+     * Fetch validator sets info
+     *
+     * @param height
+     * @returns {Promise<*>}
+     */
+    fetchValidatorSets (height) {
+        if (!height) {
+            throw new Error('height was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/validatorsets/${height}`,
+        });
+    }
+
+    /**
+     * Fetch gov proposals
+     *
+     * @returns {Promise<*>}
+     */
+    fetchGovProposals (params = {}) {
+        return get(this.apiUrl, {
+            path: '/gov/proposals',
+            query: params,
+        });
+    }
+
+    /**
+     * Fetch gov propsal
+     *
+     * @param id
+     * @param params
+     * @returns {Promise<*>}
+     */
+    fetchGovProposal (id, params = {}) {
+        if (!id) {
+            throw new Error('id was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${id}`,
+            query: params,
+        });
     }
 
     // --------------- api ------------------
 
     generateAccount() {
-        return new Account(this.path, this.bech32MainPrefix).generate()
+        return new Account(this.path, this.bech32MainPrefix).generate();
     }
 
     recoverAccount(mnemonic) {
-        return new Account(this.path, this.bech32MainPrefix).recover(mnemonic)
+        return new Account(this.path, this.bech32MainPrefix).recover(mnemonic);
     }
 
     buildMsg(input) {
         const msgType = this.msgBuilder.getMsgType(input.type);
 
-        return msgType.build(input)
+        return msgType.build(input);
     }
 
     buildSignMsg(msg, txInfo) {
-        return this.txBuilder.build(msg, txInfo)
+        return this.txBuilder.build(msg, txInfo);
     }
 
     signWithAccount(stdSignMsg, account) {
-        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKey())
+        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKey());
     }
 
     sign(stdSignMsg, privateKey, publicKey) {
         return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
     }
 
-    async transferFromAccount({
-                                  from,
-                                  to,
-                                  amount,
-                                  denom = DEFAULT_DENOM,
-                                  fee = DEFAULT_FEE,
-                                  feeDenom = DEFAULT_DENOM,
-                                  gas = DEFAULT_GAS,
-                                  memo = ''
-                              }) {
+    transferFromAccount ({
+                             from,
+                             to,
+                             amount,
+                             denom = DEFAULT_DENOM,
+                             fee = DEFAULT_FEE,
+                             feeDenom = DEFAULT_DENOM,
+                             gas = DEFAULT_GAS,
+                             memo = '',
+                         }) {
         if (!this.chainId) {
-            throw new Error("chainId object was not set or invalid");
+            throw new Error('chainId object was not set or invalid');
         }
 
-        const msg = this.buildMsg({
-            type: "cosmos-sdk/MsgSend",
-            from_address: from.getAddress(),
-            to_address: to,
-            denom,
+        return this.transfer({
+            from: from.getAddress(),
+            privateKey: from.getPrivateKey(),
+            publicKey: from.getPublicKey(),
+            accountNumber: from.getAccountNumber(),
+            sequence: from.getSequence(),
+            to,
             amount,
-        });
-        const signMsg = this.buildSignMsg(msg, {
-            chainId: this.chainId,
-            feeDenom,
+            denom,
             fee,
+            feeDenom,
             gas,
             memo,
-            accountNumber: from.getAccountNumber(),
-            sequence: from.getSequence()
         });
-        const stdTx = this.signWithAccount(signMsg, from);
-        return await this.broadcastTx(stdTx);
     }
 
-    async transfer({
-                       from,
-                       accountNumber,
-                       sequence,
-                       privateKey,
-                       publicKey,
-                       to,
-                       amount,
-                       denom = DEFAULT_DENOM,
-                       fee = DEFAULT_FEE,
-                       feeDenom = DEFAULT_DENOM,
-                       gas = DEFAULT_GAS,
-                       memo = ''
-                   }) {
+    transfer ({
+                  from,
+                  accountNumber,
+                  sequence,
+                  privateKey,
+                  publicKey,
+                  to,
+                  amount,
+                  denom = DEFAULT_DENOM,
+                  fee = DEFAULT_FEE,
+                  feeDenom = DEFAULT_DENOM,
+                  gas = DEFAULT_GAS,
+                  memo = '',
+              }) {
         if (!this.chainId) {
-            throw new Error("chainId object was not set or invalid");
+            throw new Error('chainId object was not set or invalid');
         }
 
         const msg = this.buildMsg({
-            type: "cosmos-sdk/MsgSend",
+            type: 'cosmos-sdk/MsgSend',
             from_address: from,
             to_address: to,
             denom,
@@ -297,10 +504,10 @@ class Chain {
             gas,
             memo,
             accountNumber,
-            sequence
+            sequence,
         });
         const signedTx = this.sign(tx, privateKey, publicKey);
-        return await this.broadcastTx(signedTx);
+        return this.broadcastTx(signedTx);
     }
 }
 
@@ -308,6 +515,6 @@ function network(config) {
     return new Chain(config);
 }
 
-module.exports = {
-    network: network
+export default {
+    network,
 };

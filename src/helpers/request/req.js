@@ -1,19 +1,22 @@
-const fetch = require("node-fetch");
-
-module.exports = async function req(url, {method, path, query, data} = {}) {
-    url = new URL(`${url}${path ? '/' + path : ''}`);
-    query && Object.keys(query).forEach(param => {
-        url.searchParams.append(param, query[param])
+export default function req (url, {method, path, query, data} = {}, log = false) {
+    url = new URL(`${url}${path || ''}`);
+    query && Object.keys(query).forEach((param) => {
+        if (query[param]) url.searchParams.append(param, query[param]);
     });
+
+    log && console.log(url.toString());
+
     let reqObj = {};
     if (!method) method = 'GET';
-    if (method === 'POST')
+    if (method === 'POST') {
         reqObj = {
-            method, headers: {
-                'Content-Type': 'application/json'
+            method,
+            headers: {
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(data)
+            body: JSON.stringify(data),
         };
+    }
 
-    return await fetch(url.toString(), reqObj).then(response => response.json())
-};
+    return fetch(url.toString(), reqObj).then(response => response.json());
+}

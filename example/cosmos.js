@@ -20,6 +20,14 @@ async function _() {
     account.updateInfo(accountInfo.result.value);
     console.log(account.getAddress());
 
+    const stakingPool = await chain.fetchStakingPool();
+    console.log(stakingPool);
+
+    const txs = await chain.fetchAllTransactions();
+    console.log(txs);
+    const sr = await chain.fetchTotalTransactionsCount();
+    console.log(sr);
+
     // // const balanceInfo = await chain.fetchBalance(address);
     // // console.log(balanceInfo);
     //
@@ -51,13 +59,13 @@ async function _() {
 
     // ---------------- TransferFromAccount method ---------------------------
 
-    // const resTransferFromAccount = await chain.transferFromAccount({
-    //     from: account,
-    //     to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
-    //     amount: 200
-    // });
-    //
-    // console.log(resTransferFromAccount);
+    const resTransferFromAccount = await chain.transferFromAccount({
+        from: account,
+        to: 'darc1zq5g5gvm2k7e8nq4ca6lvf3u8a2nzlzg7hul8f',
+        amount: 200
+    });
+
+    console.log(resTransferFromAccount);
 
     // ---------------- Transfer method method ---------------------------
 

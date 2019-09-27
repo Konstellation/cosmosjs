@@ -1,6 +1,6 @@
-const MsgSend = require('./msgtypes/MsgSend');
+import MsgSend from './msgtypes/MsgSend';
 
-module.exports = class MsgBuilder {
+export default class MsgBuilder {
     constructor() {
         this.msgTypes = {};
     }
@@ -12,11 +12,11 @@ module.exports = class MsgBuilder {
     registerMsgTypes() {
         this.addMsgType(MsgSend);
 
-        return this
+        return this;
     }
 
     getMsgType(type) {
         return this.msgTypes[type];
         // !msgType ? new Error("No such input.type: " + type) : '';
     }
-};
+}

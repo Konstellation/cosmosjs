@@ -1,7 +1,7 @@
 {
   "name": "@konstellation/cosmosjs",
-  "version": "1.0.2",
-  "description": "A JavasSript Open Source Library for Konstellation Network",
+  "version": "1.0.3",
+  "description": "A JavasScript Open Source Library for Konstellation Network",
   "main": "./src/index.js",
   "engines": {
     "node": ">=8.0.0"
@@ -23,8 +23,23 @@
     "bech32": "^1.1.3",
     "bip32": "^1.0.2",
     "bip39": "^2.5.0",
-    "bitcoinjs-lib": "^4.0.2",
+    "secp256k1": "^3.7.1",
+    "bitcoinjs-lib": "^5.1.6",
     "node-fetch": "^2.6.0",
-    "secp256k1": "^3.6.2"
+    "base64-node": "^1.0.0",
+    "bignumber.js": "^8.1.1",
+    "big.js": "^5.2.2",
+    "crypto-js": "^3.1.9-1",
+    "scrypt.js": "^0.3.0",
+    "web3-utils": "^1.0.0-beta.52",
+    "uuid": "latest",
+    "ripemd160": "latest",
+    "sha256": "^0.2.0"
+  },
+  "devDependencies": {
+    "babel-eslint": "^10.0.1",
+    "babel-plugin-component": "^1.1.1",
+    "eslint": "^5.8.0",
+    "eslint-plugin-vue": "^5.0.0-0"
   }
 }

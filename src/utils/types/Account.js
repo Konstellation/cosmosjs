@@ -1,59 +1,64 @@
-const bip39 = require('bip39');
-const bip32 = require('bip32');
-const bech32 = require('bech32');
-const secp256k1 = require('secp256k1');
-const bitcoinjs = require('bitcoinjs-lib');
-const {
-    DEFAULT_BECH32_PREFIX,
-    DEFAULT_KEY_PATH
-} = require('../constants');
+import AccountKeyPair from './AccountKeyPair';
 
-module.exports = class Account {
-    constructor(path, bech32MainPrefix) {
-        this.path = path || DEFAULT_KEY_PATH;
-        this.bech32MainPrefix = bech32MainPrefix || DEFAULT_BECH32_PREFIX;
+export default class Account {
+    constructor (bech32MainPrefix, path) {
         this.sequence = '';
         this.accountNumber = '';
+        this.keyPair = new AccountKeyPair(bech32MainPrefix, path);
     }
 
     generate() {
-        this.mnemonic = bip39.generateMnemonic(256);
-        this.seed = bip39.mnemonicToSeed(this.mnemonic);
-        this.node = bip32.fromSeed(this.seed);
-        this.child = this.node.derivePath(this.path);
+        this.keyPair.generate();
 
         return this;
     }
 
     recover(mnemonic) {
-        this.mnemonic = mnemonic;
-        this.seed = bip39.mnemonicToSeed(this.mnemonic);
-        this.node = bip32.fromSeed(this.seed);
-        this.child = this.node.derivePath(this.path);
+        this.keyPair.recover(mnemonic);
+
+        return this;
+    }
+
+    toJSON () {
+        return this.keyPair.toJSON();
+    }
+
+    toV3KeyStore (pass) {
+        return this.keyPair.toV3KeyStore(pass);
+    }
+
+    fromV3KeyStore (keyStore, pass) {
+        this.keyPair.fromV3KeyStore(keyStore, pass);
 
         return this;
     }
 
     getAddress() {
-        const words = bech32.toWords(this.child.identifier);
-
-        return bech32.encode(this.bech32MainPrefix, words);
+        return this.keyPair.getAddress();
     }
 
     getECPair() {
-        return bitcoinjs.ECPair.fromPrivateKey(this.child.privateKey, {
-            compressed: false
-        })
+        return this.keyPair.getECPair();
     }
 
     getPrivateKey() {
-        return this.child.privateKey;
+        return this.keyPair.getPrivateKey();
+    }
+
+    getPrivateKeyEncoded () {
+        return this.keyPair.getPrivateKeyEncoded();
     }
 
     getPublicKey() {
-        const pubKeyByte = secp256k1.publicKeyCreate(this.child.privateKey);
+        return this.keyPair.getPublicKey();
+    }
 
-        return Buffer.from(pubKeyByte, 'binary').toString('base64');
+    getPublicKeyEncoded () {
+        return this.keyPair.getPublicKeyEncoded();
+    }
+
+    getMnemonic () {
+        return this.keyPair.getMnemonic();
     }
 
     updateInfo({account_number, sequence}) {
@@ -70,4 +75,4 @@ module.exports = class Account {
     getAccountNumber() {
         return this.accountNumber;
     }
-};
+}

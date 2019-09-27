@@ -1,8 +1,8 @@
-const MsgType = require('../MsgType');
+import MsgType from '../MsgType';
 
 const type = 'cosmos-sdk/MsgSend';
 
-function builder({from_address, to_address, amount, denom}) {
+function builder ({from_address, to_address, amount, denom}) {
     return [
         {
             type,
@@ -10,17 +10,17 @@ function builder({from_address, to_address, amount, denom}) {
                 amount: [
                     {
                         amount: String(amount),
-                        denom: String(denom)
-                    }
+                        denom: String(denom),
+                    },
                 ],
                 from_address: String(from_address),
-                to_address: String(to_address)
-            }
-        }
-    ]
+                to_address: String(to_address),
+            },
+        },
+    ];
 }
 
-module.exports = new MsgType({
+export default new MsgType({
     type,
-    builder
+    builder,
 });
