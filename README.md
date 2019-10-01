@@ -34,7 +34,7 @@ CosmosJS supports browserify.
 #### NodeJS
 
 ```js
-    const sdk = require("@konstellation/cosmosjs");
+const sdk = require("@konstellation/cosmosjs");
 ```
 
 #### Browser
@@ -61,7 +61,7 @@ const nodeInfo = chain.fetchNodeInfo()
 
 ### Config chain to perform transactions
 ```js
- chain.updateConfig(nodeInfo);
+chain.updateConfig(nodeInfo);
 ```
 
 ### Generate Cosmos account
@@ -97,13 +97,13 @@ account.updateInfo(value);
 ##### Build message
 Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
 ```js
- const msg = chain.buildMsg({
-        type: "cosmos-sdk/MsgSend",
-        from_address: account.getAddress(),
-        to_address: "...",
-        denom: "darc",
-        amount: 100,	
- });
+const msg = chain.buildMsg({
+    type: "cosmos-sdk/MsgSend",
+    from_address: account.getAddress(),
+    to_address: "...",
+    denom: "darc",
+    amount: 100,	
+});
 ```
 
 ##### Build transaction
@@ -130,29 +130,29 @@ const stdTx = chain.sign(signMsg, account.getPrivateKey(), account.getPublicKey(
 
 ##### Broadcast transaction 
 ```js
-    const broadcastInfo = await chain.broadcastTx(stdTx, 'sync');
+const broadcastInfo = await chain.broadcastTx(stdTx, 'sync');
 ```
 
 #### - Transfer method
 ```js
 const res = await chain.transfer({
-        from: account.getAddress(),
-        accountNumber: account.getAccountNumber(),
-        sequence: account.getSequence(),
-        privateKey: account.getPrivateKey(),
-        publicKey: account.getPublicKey(),
-        to: "...",
-        amount: 300,
-    });
+    from: account.getAddress(),
+    accountNumber: account.getAccountNumber(),
+    sequence: account.getSequence(),
+    privateKey: account.getPrivateKey(),
+    publicKey: account.getPublicKey(),
+    to: "...",
+    amount: 300,
+});
 ```
 
 #### - TransferFromAccount method
 ```js
 const res = await chain.transferFromAccount({
-        from: account,
-        to: '...',
-        amount: 200
-    });
+    from: account,
+    to: '...',
+    amount: 200
+});
 ```
 
 ### Fetch total transactions count
@@ -209,12 +209,12 @@ const req = await chain.request('/txs', {
 - cosmos-sdk/MsgSend
 ```js
 const stdSignMsg = chain.buildMsg({
-      type: "cosmos-sdk/MsgSend",
-      from_address: address,
-      to_address: "...",
-      denom: "darc",
-      amount: 5000,
-    });
+    type: "cosmos-sdk/MsgSend",
+    from_address: address,
+    to_address: "...",
+    denom: "darc",
+    amount: 5000,
+});
 ```
 
 ## Documentation
