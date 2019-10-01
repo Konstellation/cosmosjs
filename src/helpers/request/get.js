@@ -1,8 +1,8 @@
-const req = require('./req');
+import req from './req';
 
-module.exports = async function get(url, params) {
-    return await req(url, {
-        method: "GET",
-        ...params
-    })
-};
+export default function get (url, params, log) {
+    return req(url, {
+        method: 'GET',
+        ...params,
+    }, log);
+}

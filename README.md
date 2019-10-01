@@ -49,46 +49,46 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 
 ### Init network
 ```js
-    const chain = sdk.network({
-        url: "http://127.0.0.1:1317",
-    });
+const chain = sdk.network({
+    url: "http://127.0.0.1:1317",
+});
 ```
 
 ### Fetch node info
 ```js
-    const nodeInfo = chain.fetchNodeInfo()
+const nodeInfo = chain.fetchNodeInfo()
 ```
 
 ### Config chain to perform transactions
 ```js
-     chain.updateConfig(nodeInfo);
+ chain.updateConfig(nodeInfo);
 ```
 
 ### Generate Cosmos account
 ```js
-    let account = chain.generateAccount();
+let account = chain.generateAccount();
 ```
 
 ### Recover Cosmos account from mnemonic
 ```js
-    const mnemonic = "...";
-    const account = chain.recoverAccount(mnemonic);
+const mnemonic = "...";
+const account = chain.recoverAccount(mnemonic);
 ```
 
 ### Get address
 ```js
-    const address = account.getAddress();
+const address = account.getAddress();
 ```
 
 ### Fetch balance of account by address
 ```js
-    const balance = await chain.fetchBalance(address);
+const balance = await chain.fetchBalance(address);
 ```
 
 ### Fetch account info by address
 ```js
-    const accountInfo = await chain.fetchAccount(address);
-    account.updateInfo(accountInfo.result.value);
+const {result: {value}} = await chain.fetchAccount(address);
+account.updateInfo(value);
 ```
 
 ### Transfer DARC to destination address. 
@@ -97,33 +97,35 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ##### Build message
 Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
 ```js
-     const msg = chain.buildMsg({
-            type: "cosmos-sdk/MsgSend",
-            from_address: account.getAddress(),
-            to_address: "...",
-            denom: "darc",
-            amount: 100,	
-     });
+ const msg = chain.buildMsg({
+        type: "cosmos-sdk/MsgSend",
+        from_address: account.getAddress(),
+        to_address: "...",
+        denom: "darc",
+        amount: 100,	
+ });
 ```
 
 ##### Build transaction
 ```js
-    const signMsg = chain.buildSignMsg(msg, {
-        chainId: 'darchub',
-        feeDenom: "darc",
-        fee: 5000,
-        gas: 200000,
-        memo: "",
-        accountNumber: account.getAccountNumber(),
-        sequence: account.getSequence()
-    });
+const signMsg = chain.buildSignMsg(msg, {
+    chainId: 'darchub',
+    feeDenom: "darc",
+    fee: 5000,
+    gas: 200000,
+    memo: "",
+    accountNumber: account.getAccountNumber(),
+    sequence: account.getSequence()
+});
 ```
 
 ##### Sign transaction 
 ```js
-    const stdTx = chain.signWithAccount(signMsg, account);
+const stdTx = chain.signWithAccount(signMsg, account);
+```
 or
-    const stdTx = chain.sign(signMsg, account.getPrivateKey(), account.getPublicKey());
+```js
+const stdTx = chain.sign(signMsg, account.getPrivateKey(), account.getPublicKey());
 ```
 
 ##### Broadcast transaction 
@@ -133,86 +135,86 @@ or
 
 #### - Transfer method
 ```js
-    const res = await chain.transfer({
-            from: account.getAddress(),
-            accountNumber: account.getAccountNumber(),
-            sequence: account.getSequence(),
-            privateKey: account.getPrivateKey(),
-            publicKey: account.getPublicKey(),
-            to: "...",
-            amount: 300,
-        });
+const res = await chain.transfer({
+        from: account.getAddress(),
+        accountNumber: account.getAccountNumber(),
+        sequence: account.getSequence(),
+        privateKey: account.getPrivateKey(),
+        publicKey: account.getPublicKey(),
+        to: "...",
+        amount: 300,
+    });
 ```
 
 #### - TransferFromAccount method
 ```js
-    const res = await chain.transferFromAccount({
-            from: account,
-            to: '...',
-            amount: 200
-        });
+const res = await chain.transferFromAccount({
+        from: account,
+        to: '...',
+        amount: 200
+    });
 ```
 
 ### Fetch total transactions count
 ```js
-    const txsInfo = await chain.fetchTotalTransactionsCount();
+const txsInfo = await chain.fetchTotalTransactionsCount();
 ```
 
 ### Fetch all transactions
 ```js
-    const txsInfo = await chain.fetchAllTransactions();
+const txsInfo = await chain.fetchAllTransactions();
 ```
 
 ### Fetch transactions where the address is a recipient
 ```js
-    const txsInfo = await chain.fetchInboundTransactions(address, 100);
+const txsInfo = await chain.fetchInboundTransactions(address, 100);
 ```
 
 ### Fetch transaction where the address is a sender
 ```js
-    const txsInfo = await chain.fetchOutboundTransactions(address, 100);
+const txsInfo = await chain.fetchOutboundTransactions(address, 100);
 ```
 
 ### Fetch a transaction by hash in a committed block
 ```js
-    const txInfo = await chain.fetchTransaction('FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5');
+const txInfo = await chain.fetchTransaction('FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5');
 ```
 
 ### Search transactions 
 Genesis transactions are returned if the height parameter is set to zero, otherwise the transactions are searched for by events
 ```js
-    const txs = await chain.searchTransactions({height: 0});
+const txs = await chain.searchTransactions({height: 0});
 ```
 
 ### Fetch the total supply of coins
 ```js
-    const coinsInfo = await chain.fetchTotalSupply();
+const coinsInfo = await chain.fetchTotalSupply();
 ```
 
 ### Fetch the supply of a single denom
 ```js
-    const coinsInfo = await chain.fetchSupplyDenom('darc');
+const coinsInfo = await chain.fetchSupplyDenom('darc');
 ```
 
 ### Perform custom request
 ```js
-    const node_info = await chain.request('/node_info');
-    const req = await chain.request('/txs', {
-        path: '/FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5'
-    });
+const node_info = await chain.request('/node_info');
+const req = await chain.request('/txs', {
+    path: '/FB2FCCCCA94B18E19C9D1A4DDA0DDF97E18E3A385C94A37AA95695E65F7364D5'
+});
 ```
 
 #### Supporting Message Types (Updating...)
 
 - cosmos-sdk/MsgSend
 ```js
-    const stdSignMsg = chain.buildMsg({
-          type: "cosmos-sdk/MsgSend",
-          from_address: address,
-          to_address: "...",
-          denom: "darc",
-          amount: 5000,
-        });
+const stdSignMsg = chain.buildMsg({
+      type: "cosmos-sdk/MsgSend",
+      from_address: address,
+      to_address: "...",
+      denom: "darc",
+      amount: 5000,
+    });
 ```
 
 ## Documentation
