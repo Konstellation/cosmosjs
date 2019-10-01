@@ -1,3 +1,5 @@
+import {GET, POST} from './methods';
+
 export default function req (url, {method, path, query, data} = {}, log = false) {
     url = new URL(`${url}${path || ''}`);
     query && Object.keys(query).forEach((param) => {
@@ -7,8 +9,8 @@ export default function req (url, {method, path, query, data} = {}, log = false)
     log && console.log(url.toString());
 
     let reqObj = {};
-    if (!method) method = 'GET';
-    if (method === 'POST') {
+    if (!method) method = GET;
+    if (method === POST) {
         reqObj = {
             method,
             headers: {

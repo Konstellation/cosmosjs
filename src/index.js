@@ -293,7 +293,7 @@ class Chain {
                 tx: signedTx,
                 mode,
             },
-        });
+        }, true);
     }
 
     /**
@@ -349,7 +349,7 @@ class Chain {
             query: {
                 status,
             },
-        });
+        }, true);
     }
 
     /**
@@ -416,29 +416,53 @@ class Chain {
 
     // --------------- api ------------------
 
-    generateAccount() {
-        return new Account(this.path, this.bech32MainPrefix).generate();
+    generateAccount () {
+        return new Account(this.bech32MainPrefix, this.path).generate();
     }
 
-    recoverAccount(mnemonic) {
-        return new Account(this.path, this.bech32MainPrefix).recover(mnemonic);
+    recoverAccount (mnemonic) {
+        return new Account(this.bech32MainPrefix, this.path).recover(mnemonic);
     }
 
-    buildMsg(input) {
+    importAccountFromV3KeyStore (keyStore, pass) {
+        return new Account(this.bech32MainPrefix, this.path).fromV3KeyStore(keyStore, pass);
+    }
+
+    exportAccountToV3KeyStore (account, pass) {
+        return account.toV3KeyStore(pass);
+    }
+
+    buildMsg (input = {
+        type: 'cosmos-sdk/MsgSend',
+        from_address: '',
+        to_address: '',
+        denom: DEFAULT_DENOM,
+        amount: 0,
+    }) {
         const msgType = this.msgBuilder.getMsgType(input.type);
 
         return msgType.build(input);
     }
 
-    buildSignMsg(msg, txInfo) {
+    buildSignMsg (msg, txInfo = {
+        chainId: this.chainId,
+        fee: {
+            denom: DEFAULT_DENOM,
+            amount: DEFAULT_FEE,
+        },
+        gas: DEFAULT_GAS,
+        memo: '',
+        accountNumber: 0,
+        sequence: 0,
+    }) {
         return this.txBuilder.build(msg, txInfo);
     }
 
-    signWithAccount(stdSignMsg, account) {
-        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKey());
+    signWithAccount (stdSignMsg, account) {
+        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKeyEncoded());
     }
 
-    sign(stdSignMsg, privateKey, publicKey) {
+    sign (stdSignMsg, privateKey, publicKey) {
         return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
     }
 
@@ -447,8 +471,10 @@ class Chain {
                              to,
                              amount,
                              denom = DEFAULT_DENOM,
-                             fee = DEFAULT_FEE,
-                             feeDenom = DEFAULT_DENOM,
+                             fee = {
+                                 amount: DEFAULT_FEE,
+                                 denom: DEFAULT_DENOM,
+                             },
                              gas = DEFAULT_GAS,
                              memo = '',
                          }) {
@@ -459,14 +485,13 @@ class Chain {
         return this.transfer({
             from: from.getAddress(),
             privateKey: from.getPrivateKey(),
-            publicKey: from.getPublicKey(),
+            publicKey: from.getPublicKeyEncoded(),
             accountNumber: from.getAccountNumber(),
             sequence: from.getSequence(),
             to,
             amount,
             denom,
             fee,
-            feeDenom,
             gas,
             memo,
         });
@@ -481,8 +506,10 @@ class Chain {
                   to,
                   amount,
                   denom = DEFAULT_DENOM,
-                  fee = DEFAULT_FEE,
-                  feeDenom = DEFAULT_DENOM,
+                  fee = {
+                      amount: DEFAULT_FEE,
+                      denom: DEFAULT_DENOM,
+                  },
                   gas = DEFAULT_GAS,
                   memo = '',
               }) {
@@ -499,7 +526,6 @@ class Chain {
         });
         const tx = this.buildSignMsg(msg, {
             chainId: this.chainId,
-            feeDenom,
             fee,
             gas,
             memo,
@@ -507,11 +533,12 @@ class Chain {
             sequence,
         });
         const signedTx = this.sign(tx, privateKey, publicKey);
+
         return this.broadcastTx(signedTx);
     }
 }
 
-function network(config) {
+function network (config) {
     return new Chain(config);
 }
 
