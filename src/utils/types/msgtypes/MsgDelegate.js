@@ -1,24 +1,24 @@
-const MsgType = require('../MsgType');
+import MsgType from '../MsgType';
 
 const type = 'cosmos-sdk/MsgDelegate';
 
-function builder({amount, denom, delegator_address, validator_address}) {
+function builder ({amount: {amount, denom}, delegatorAddr, validatorAddr}) {
     return [
         {
             type,
             value: {
                 amount: {
                     amount: String(amount),
-                    denom
+                    denom: String(denom),
                 },
-                delegator_address,
-                validator_address
-            }
-        }
+                delegator_address: delegatorAddr,
+                validator_address: validatorAddr,
+            },
+        },
     ];
 }
 
-module.exports = new MsgType({
+export default new MsgType({
     type,
-    builder
+    builder,
 });

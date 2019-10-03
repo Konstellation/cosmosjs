@@ -103,8 +103,12 @@ export default class AccountKeyPair {
         }
     }
 
-    isValidAddress (address) {
-        const preReg = new RegExp(`^${this.bech32MainPrefix}1`);
+    isValidAddress () {
+        return AccountKeyPair.isValidAddress(this.getAddress(), this.bech32MainPrefix);
+    }
+
+    static isValidAddress (address, prefix = DEFAULT_BECH32_PREFIX) {
+        const preReg = new RegExp(`^${prefix}1`);
         if (!preReg.test(address)) {
             return false;
         }
@@ -115,14 +119,18 @@ export default class AccountKeyPair {
         }
 
         try {
-            bech32.fromBech32(address);
+            bech32.decode(address);
             return true;
         } catch (e) {
             return false;
         }
     }
 
-    isValidPrivate (privateKey) {
+    isValidPrivate () {
+        return AccountKeyPair.isValidPrivate(this.getPrivateKeyEncoded())
+    }
+
+    static isValidPrivate (privateKey) {
         return /^[0-9a-fA-F]{64}$/i.test(privateKey);
     }
 

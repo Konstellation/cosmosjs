@@ -2,7 +2,7 @@ import MsgType from '../MsgType';
 
 const type = 'cosmos-sdk/MsgSend';
 
-function builder ({from_address, to_address, amount, denom}) {
+function builder ({from, to, amount: {amount, denom}}) {
     return [
         {
             type,
@@ -13,8 +13,8 @@ function builder ({from_address, to_address, amount, denom}) {
                         denom: String(denom),
                     },
                 ],
-                from_address: String(from_address),
-                to_address: String(to_address),
+                from_address: String(from),
+                to_address: String(to),
             },
         },
     ];

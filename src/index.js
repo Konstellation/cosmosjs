@@ -293,7 +293,7 @@ class Chain {
                 tx: signedTx,
                 mode,
             },
-        }, true);
+        });
     }
 
     /**
@@ -324,7 +324,7 @@ class Chain {
     }
 
     /**
-     * Fetch staking pool
+     * Fetch the current state of the staking pool
      *
      * @returns {Promise<*>}
      */
@@ -335,36 +335,142 @@ class Chain {
     }
 
     /**
-     * Fetch staking validators
-     *
+     * Fetch staking validators. Get all validator candidates.
+     * By default it returns only the bonded validators.
+     * @param status The validator bond status. Must be either 'bonded’, 'unbonded’, or 'unbonding’.
+     * @param params page, limit
      * @returns {Promise<*>}
      */
-    fetchStakingValidators (status) {
-        if (!status) {
-            throw new Error('status was not set or invalid');
-        }
+    fetchValidators (status = undefined, params = {}) {
+        const query = status ? {status, ...params} : params;
 
         return get(this.apiUrl, {
             path: '/staking/validators',
-            query: {
-                status,
-            },
-        }, true);
+            query,
+        });
     }
 
     /**
-     * Fetch validator details
+     * Fetch the information from a single validator
      *
-     * @param address
+     * @param validatorAddr Bech32 OperatorAddress of Validator
      * @returns {Promise<*>}
      */
-    fetchValidatorDetails (address) {
-        if (!address) {
-            throw new Error('address was not set or invalid');
+    fetchValidatorDetails (validatorAddr) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
         }
 
         return get(this.apiUrl, {
-            path: `/staking/validators/${address}`,
+            path: `/staking/validators/${validatorAddr}`,
+        });
+    }
+
+    /**
+     * Fetch all delegations from a delegator
+     *
+     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorDelegations (delegatorAddr) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/delegators/${delegatorAddr}/delegations`,
+        });
+    }
+
+    /**
+     * Fetch the current delegation between a delegator and a validator
+     *
+     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @param validatorAddr Bech32 OperatorAddress of validator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorDelegation (delegatorAddr, validatorAddr) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/delegators/${delegatorAddr}/delegations/${validatorAddr}`,
+        });
+    }
+
+    /**
+     * Fetch all unbonding delegations from a delegator
+     *
+     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorUnbondingDelegations (delegatorAddr) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/delegators/${delegatorAddr}/unbonding_delegations`,
+        });
+    }
+
+    /**
+     * Fetch the current unbonding delegation from a delegator with the validator
+     *
+     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @param validatorAddr Bech32 AccAddress of Validator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorUnbondingDelegation (delegatorAddr, validatorAddr) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/delegators/${delegatorAddr}/unbonding_delegations/${validatorAddr}`,
+        });
+    }
+
+    /**
+     * Fetch the total rewards balance from all delegations
+     *
+     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorRewards (delegatorAddr) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/distribution/delegators/${delegatorAddr}/rewards`,
+        });
+    }
+
+    /**
+     * Fetch a delegation reward
+     *
+     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @param validatorAddr Bech32 OperatorAddress of validator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorReward (delegatorAddr, validatorAddr) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/distribution/delegators/${delegatorAddr}/rewards/${validatorAddr}`,
         });
     }
 
@@ -444,6 +550,12 @@ class Chain {
         return msgType.build(input);
     }
 
+    /**
+     *
+     * @param msg
+     * @param txInfo
+     * @returns {StdSignMsg}
+     */
     buildSignMsg (msg, txInfo = {
         chainId: this.chainId,
         fee: {
@@ -466,65 +578,47 @@ class Chain {
         return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
     }
 
-    transferFromAccount ({
-                             from,
-                             to,
-                             amount,
-                             denom = DEFAULT_DENOM,
-                             fee = {
-                                 amount: DEFAULT_FEE,
-                                 denom: DEFAULT_DENOM,
-                             },
-                             gas = DEFAULT_GAS,
-                             memo = '',
-                         }) {
+    /**
+     *
+     * @param msg {{amount: *, from: *, to: *, type: string}}
+     * @param fee
+     * @param gas
+     * @param memo
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @returns {Promise<*>}
+     */
+    buildSignBroadcast (msg, {
+        fee = {
+            amount: DEFAULT_FEE,
+            denom: DEFAULT_DENOM,
+        },
+        gas = DEFAULT_GAS,
+        memo = '',
+    }, {accountNumber, sequence, privateKey, publicKey}) {
         if (!this.chainId) {
             throw new Error('chainId object was not set or invalid');
         }
-
-        return this.transfer({
-            from: from.getAddress(),
-            privateKey: from.getPrivateKey(),
-            publicKey: from.getPublicKeyEncoded(),
-            accountNumber: from.getAccountNumber(),
-            sequence: from.getSequence(),
-            to,
-            amount,
-            denom,
-            fee,
-            gas,
-            memo,
-        });
-    }
-
-    transfer ({
-                  from,
-                  accountNumber,
-                  sequence,
-                  privateKey,
-                  publicKey,
-                  to,
-                  amount,
-                  denom = DEFAULT_DENOM,
-                  fee = {
-                      amount: DEFAULT_FEE,
-                      denom: DEFAULT_DENOM,
-                  },
-                  gas = DEFAULT_GAS,
-                  memo = '',
-              }) {
-        if (!this.chainId) {
-            throw new Error('chainId object was not set or invalid');
+        if (!msg) {
+            throw new Error('msg object was not set or invalid');
+        }
+        if (!accountNumber) {
+            throw new Error('accountNumber object was not set or invalid');
+        }
+        if (!sequence) {
+            throw new Error('sequence object was not set or invalid');
+        }
+        if (!privateKey) {
+            throw new Error('privateKey object was not set or invalid');
+        }
+        if (!publicKey) {
+            throw new Error('publicKey object was not set or invalid');
         }
 
-        const msg = this.buildMsg({
-            type: 'cosmos-sdk/MsgSend',
-            from_address: from,
-            to_address: to,
-            denom,
-            amount,
-        });
-        const tx = this.buildSignMsg(msg, {
+        const stdMsg = this.buildMsg(msg);
+        const tx = this.buildSignMsg(stdMsg, {
             chainId: this.chainId,
             fee,
             gas,
@@ -535,6 +629,324 @@ class Chain {
         const signedTx = this.sign(tx, privateKey, publicKey);
 
         return this.broadcastTx(signedTx);
+    }
+
+    /**
+     *
+     * @param params {from, to, amount, fee, gas, memo}
+     * @returns {*}
+     */
+    transferWithAccount (params) {
+        const {from} = params;
+        if (!from) {
+            throw new Error('from object was not set or invalid');
+        }
+
+        return this.transfer({
+            ...params,
+            from: from.getAddress(),
+            privateKey: from.getPrivateKey(),
+            publicKey: from.getPublicKeyEncoded(),
+            accountNumber: from.getAccountNumber(),
+            sequence: from.getSequence(),
+        });
+    }
+
+    /**
+     *
+     * @param from
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @param to
+     * @param amount
+     * @param fee
+     * @param gas
+     * @param memo
+     * @returns {*}
+     */
+    transfer ({from, accountNumber, sequence, privateKey, publicKey, to, amount, fee, gas, memo}) {
+        if (!from) {
+            throw new Error('from object was not set or invalid');
+        }
+        if (!to) {
+            throw new Error('to object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('chainId object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: 'cosmos-sdk/MsgSend',
+            from,
+            to,
+            amount,
+        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
+    }
+
+    /**
+     *
+     * @param params {delegator, validator, amount, fee, gas, memo}
+     * @returns {*}
+     */
+    delegateWithAccount (params) {
+        const {delegator} = params;
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.delegate({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     *
+     * @param delegatorAddr
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @param validatorAddr
+     * @param amount
+     * @param fee
+     * @param gas
+     * @param memo
+     * @returns {*}
+     */
+    delegate ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddr, amount, fee, gas, memo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('amount object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: 'cosmos-sdk/MsgDelegate',
+            delegatorAddr,
+            validatorAddr,
+            amount,
+        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
+    }
+
+    /**
+     *
+     * @param params {delegator, validatorAddrFrom, validatorAddrTo, amount, fee, gas, memo}
+     * @returns {*}
+     */
+    redelegateWithAccount (params) {
+        const {delegator} = params;
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.redelegate({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     *
+     * @param delegatorAddr
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @param validatorAddrFrom
+     * @param validatorAddrTo
+     * @param amount
+     * @param fee
+     * @param gas
+     * @param memo
+     * @returns {*}
+     */
+    redelegate ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddrFrom, validatorAddrTo, amount, fee, gas, memo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddrFrom) {
+            throw new Error('validatorAddrFrom object was not set or invalid');
+        }
+        if (!validatorAddrTo) {
+            throw new Error('validatorAddrTo object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('amount object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: 'cosmos-sdk/MsgBeginRedelegate',
+            delegatorAddr,
+            validatorAddrFrom,
+            validatorAddrTo,
+            amount,
+        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
+    }
+
+    /**
+     *
+     * @param params {delegator, validator, amount, fee, gas, memo}
+     * @returns {*}
+     */
+    undelegateWithAccount (params) {
+        const {delegator} = params;
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.undelegate({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     *
+     * @param delegatorAddr
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @param validatorAddr
+     * @param amount
+     * @param fee
+     * @param gas
+     * @param memo
+     * @returns {*}
+     */
+    undelegate ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddr, amount, fee, gas, memo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('amount object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: 'cosmos-sdk/MsgUndelegate',
+            delegatorAddr,
+            validatorAddr,
+            amount,
+        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
+    }
+
+    /**
+     * Withdraw a delegation reward
+     *
+     * @param params {delegator, validatorAddr}
+     * @returns {*}
+     */
+    withDrawDelegationRewardWithAccount (params) {
+        const {delegator} = params;
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.withDrawDelegationReward({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Withdraw a delegation reward
+     *
+     * @param delegatorAddr
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @param validatorAddr
+     * @param fee
+     * @param gas
+     * @param memo
+     * @returns {Promise<*>}
+     */
+    withDrawDelegationReward ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddr, fee, gas, memo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: 'cosmos-sdk/MsgWithdrawDelegationReward',
+            delegatorAddr,
+            validatorAddr,
+        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
+    }
+
+    /**
+     * Withdraw all the delegator's delegation rewards
+     *
+     * @param params {delegator}
+     * @returns {Promise<*>}
+     */
+    withDrawDelegationRewardsWithAccount (params) {
+        const {delegator} = params;
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.withDrawDelegationsReward({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Withdraw all the delegator's delegation rewards
+     *
+     * @param delegatorAddr
+     * @param accountNumber
+     * @param sequence
+     * @param privateKey
+     * @param publicKey
+     * @param fee
+     * @param gas
+     * @param memo
+     * @returns {Promise<*>}
+     */
+    withDrawDelegationsReward ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, fee, gas, memo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: 'cosmos-sdk/MsgWithdrawDelegationRewardsAll',
+            delegatorAddr,
+        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
     }
 }
 

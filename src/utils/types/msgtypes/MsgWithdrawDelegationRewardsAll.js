@@ -1,14 +1,13 @@
 import MsgType from '../MsgType';
 
-const type = 'cosmos-sdk/MsgWithdrawDelegationReward';
+const type = 'cosmos-sdk/MsgWithdrawDelegationRewardsAll';
 
-function builder ({delegatorAddr, validatorAddr}) {
+function builder ({delegatorAddr}) {
     return [
         {
             type,
             value: {
                 delegator_address: delegatorAddr,
-                validator_address: validatorAddr,
             },
         },
     ];

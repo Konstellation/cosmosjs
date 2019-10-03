@@ -1,13 +1,10 @@
 export default class MsgType {
-    constructor ({
-                     type,
-                     builder,
-                 }) {
+    constructor ({type, builder}) {
         this.type = type;
         this.builder = builder;
     }
 
-    build(input) {
+    build (input) {
         return this.builder(input);
     }
 }
