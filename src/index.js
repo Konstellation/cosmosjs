@@ -10,6 +10,7 @@ import {
     DEFAULT_BECH32_PREFIX,
     DEFAULT_KEY_PATH,
 } from './utils/constants';
+
 import MsgSend from './utils/types/msgtypes/MsgSend';
 import MsgDelegate from './utils/types/msgtypes/MsgDelegate';
 import MsgBeginRedelegate from './utils/types/msgtypes/MsgBeginRedelegate';
@@ -71,7 +72,7 @@ class Chain {
     /**
      * Import account using key store v3
      *
-     * @param keyStore
+     * @param {*} keyStore
      * @param {string} pass
      * @returns {Account}
      */
@@ -82,18 +83,18 @@ class Chain {
     /**
      * Import account by mnemonic or key store
      *
-     * @param ks
-     * @param {string} pass
-     * @param {string} mnemonic
+     * @param {*} keyStore
+     * @param {string|*} pass
+     * @param {string|*} mnemonic
      * @returns {Account}
      */
-    importAccount ({ks, pass, mnemonic}) {
-        if ((!ks || !pass) || ((!ks || !pass) && !mnemonic))
+    importAccount ({keyStore, pass, mnemonic}) {
+        if ((!keyStore || !pass) || ((!keyStore || !pass) && !mnemonic))
             throw new Error('secret info was not set or invalid');
 
         return mnemonic
             ? this.recoverAccount(mnemonic)
-            : this.importAccountFromV3KeyStore(ks, pass);
+            : this.importAccountFromV3KeyStore(keyStore, pass);
     }
 
     /**
@@ -111,7 +112,7 @@ class Chain {
      * Build message with input params
      *
      * @param {string} type
-     * @param input
+     * @param {*} input
      * @returns {Msg}
      */
     buildMsg ({type = MsgSend.type, ...input}) {
@@ -176,7 +177,10 @@ class Chain {
 
         return this.sign(
             this.buildSignMsg(
-                this.buildMsg(msg), txInfo), privateKey, publicKey);
+                this.buildMsg(msg),
+                txInfo,
+            ), privateKey, publicKey,
+        );
     }
 
     /**
@@ -188,7 +192,8 @@ class Chain {
      */
     buildSignBroadcast (msg, txInfo) {
         return this.broadcastTx(
-            this.buildSign(msg, txInfo));
+            this.buildSign(msg, txInfo),
+        );
     }
 
     // --------------- api ------------------
@@ -548,12 +553,13 @@ class Chain {
      * @param params {{ page: number, limit: number }}
      * @returns {Promise<*>}
      */
-    fetchValidators (status = undefined, params = {}) {
-        const query = status ? {status, ...params} : params;
-
+    fetchValidators ({status, ...params} = {}) {
         return get(this.apiUrl, {
             path: '/staking/validators',
-            query,
+            query: {
+                status,
+                ...params,
+            },
         });
     }
 
