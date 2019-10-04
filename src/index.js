@@ -18,6 +18,7 @@ import MsgUndelegate from './utils/types/msgtypes/MsgUndelegate';
 import MsgWithdrawDelegationReward from './utils/types/msgtypes/MsgWithdrawDelegationReward';
 import MsgWithdrawDelegationRewardsAll
     from './utils/types/msgtypes/MsgWithdrawDelegationRewardsAll';
+import Socket from "./ws";
 
 class Chain {
     constructor ({
@@ -48,6 +49,8 @@ class Chain {
 
         this.msgBuilder = new MsgBuilder().registerMsgTypes();
         this.txBuilder = new TxBuilder();
+
+        this.socket = new Socket(this.nodeUrl);
     }
 
     /**
@@ -867,6 +870,29 @@ class Chain {
     }
 
     /**
+     * Fetch fee distribution parameters
+     *
+     * @returns {Promise<*>}
+     */
+    fetchDistributionParameters () {
+        return get(this.apiUrl, {
+            path: '/distribution/parameters',
+        });
+    }
+
+    /**
+     * Fetch Community pool parameters
+     *
+     * @returns {Promise<*>}
+     */
+    fetchDistributionCommunityPool () {
+        return get(this.apiUrl, {
+            path: '/distribution/community_pool',
+        });
+    }
+
+
+    /**
      * Fetch the total rewards balance from all delegations
      *
      * @param {string} delegatorAddr Bech32 AccAddress of Delegator
@@ -988,6 +1014,54 @@ class Chain {
     }
 
     /**
+     * Validator distribution information
+     *
+     * @param {string} validatorAddr Bech32 OperatorAddress of validator
+     * @returns {Promise<*>}
+     */
+    fetchValidatorDistribution (validatorAddr) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/distribution/validators/${validatorAddr}`,
+        });
+    }
+
+    /**
+     * Fetch fee distribution outstanding rewards of a single validator
+     *
+     * @param {string} validatorAddr Bech32 OperatorAddress of validator
+     * @returns {Promise<*>}
+     */
+    fetchValidatorOutstandingRewards (validatorAddr) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/distribution/validators/${validatorAddr}/outstanding_rewards`,
+        });
+    }
+
+    /**
+     * Commission and self-delegation rewards of a single validator
+     *
+     * @param {string} validatorAddr Bech32 OperatorAddress of validator
+     * @returns {Promise<*>}
+     */
+    fetchValidatorRewards (validatorAddr) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/distribution/validators/${validatorAddr}/rewards`,
+        });
+    }
+
+    /**
      * Fetch validator sets info
      *
      * @param {number} height
@@ -1031,6 +1105,20 @@ class Chain {
             path: `/gov/proposals/${id}`,
             query: params,
         });
+    }
+
+    // --------------- ws ------------------
+
+    subscribeNewBlock (handler) {
+        this.socket.subscribe('tm.event = \'NewBlock\'', handler);
+    }
+
+    subscribeNewTx (handler) {
+        this.socket.subscribe('tm.event = \'Tx\'', handler);
+    }
+
+    connect () {
+        this.socket.connect();
     }
 }
 
