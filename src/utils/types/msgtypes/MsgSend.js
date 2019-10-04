@@ -1,4 +1,4 @@
-import MsgType from '../MsgType';
+import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgSend';
 
@@ -20,7 +20,7 @@ function builder ({from, to, amount: {amount, denom}}) {
     ];
 }
 
-export default new MsgType({
+export default new Msg({
     type,
     builder,
 });

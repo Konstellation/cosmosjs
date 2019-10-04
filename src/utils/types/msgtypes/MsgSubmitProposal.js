@@ -1,4 +1,4 @@
-const MsgType = require('../MsgType');
+const MsgType = require('../Msg');
 
 const type = 'cosmos-sdk/MsgSubmitProposal';
 
@@ -22,7 +22,7 @@ function builder({description, initialDepositAmount, initialDepositDenom, propos
     ];
 }
 
-module.exports = new MsgType({
+module.exports = new Msg({
     type,
     builder
 });

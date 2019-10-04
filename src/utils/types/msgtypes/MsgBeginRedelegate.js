@@ -1,9 +1,8 @@
-import MsgType from '../MsgType';
+import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgBeginRedelegate';
 
-// eslint-disable-next-line max-len
-function builder ({amount: {amount, denom}, delegatorAddr, validatorAddrTo, validatorAddrFrom}) {
+function builder ({amount: {amount, denom}, delegatorAddr, validatorDstAddr, validatorSrcAddr}) {
     return [
         {
             type,
@@ -13,14 +12,14 @@ function builder ({amount: {amount, denom}, delegatorAddr, validatorAddrTo, vali
                     denom: String(denom),
                 },
                 delegator_address: delegatorAddr,
-                validator_dst_address: validatorAddrTo,
-                validator_src_address: validatorAddrFrom,
+                validator_dst_address: validatorDstAddr,
+                validator_src_address: validatorSrcAddr,
             },
         },
     ];
 }
 
-export default new MsgType({
+export default new Msg({
     type,
     builder,
 });

@@ -1,4 +1,4 @@
-import MsgType from '../MsgType';
+import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgDelegate';
 
@@ -18,7 +18,7 @@ function builder ({amount: {amount, denom}, delegatorAddr, validatorAddr}) {
     ];
 }
 
-export default new MsgType({
+export default new Msg({
     type,
     builder,
 });

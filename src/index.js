@@ -8,11 +8,15 @@ import req from './helpers/request/req';
 
 import {
     DEFAULT_BECH32_PREFIX,
-    DEFAULT_DENOM,
-    DEFAULT_FEE,
-    DEFAULT_GAS,
     DEFAULT_KEY_PATH,
 } from './utils/constants';
+import MsgSend from './utils/types/msgtypes/MsgSend';
+import MsgDelegate from './utils/types/msgtypes/MsgDelegate';
+import MsgBeginRedelegate from './utils/types/msgtypes/MsgBeginRedelegate';
+import MsgUndelegate from './utils/types/msgtypes/MsgUndelegate';
+import MsgWithdrawDelegationReward from './utils/types/msgtypes/MsgWithdrawDelegationReward';
+import MsgWithdrawDelegationRewardsAll
+    from './utils/types/msgtypes/MsgWithdrawDelegationRewardsAll';
 
 class Chain {
     constructor ({
@@ -45,10 +49,146 @@ class Chain {
         this.txBuilder = new TxBuilder();
     }
 
-    updateConfig ({node_info}) {
-        this.chainId = node_info.network;
+    /**
+     * Generate account
+     *
+     * @returns {Account}
+     */
+    generateAccount () {
+        return new Account(this.bech32MainPrefix, this.path).generate();
+    }
 
-        return this;
+    /**
+     * Recover account from mnemonic
+     *
+     * @param {string} mnemonic
+     * @returns {Account}
+     */
+    recoverAccount (mnemonic) {
+        return new Account(this.bech32MainPrefix, this.path).recover(mnemonic);
+    }
+
+    /**
+     * Import account using key store v3
+     *
+     * @param keyStore
+     * @param {string} pass
+     * @returns {Account}
+     */
+    importAccountFromV3KeyStore (keyStore, pass) {
+        return new Account(this.bech32MainPrefix, this.path).fromV3KeyStore(keyStore, pass);
+    }
+
+    /**
+     * Import account by mnemonic or key store
+     *
+     * @param ks
+     * @param {string} pass
+     * @param {string} mnemonic
+     * @returns {Account}
+     */
+    importAccount ({ks, pass, mnemonic}) {
+        if ((!ks || !pass) || ((!ks || !pass) && !mnemonic))
+            throw new Error('secret info was not set or invalid');
+
+        return mnemonic
+            ? this.recoverAccount(mnemonic)
+            : this.importAccountFromV3KeyStore(ks, pass);
+    }
+
+    /**
+     * Export account to key store v3
+     *
+     * @param {Account} account
+     * @param {string} pass
+     * @returns {*|{address, id, version, crypto}}
+     */
+    exportAccountToV3KeyStore (account, pass) {
+        return account.toV3KeyStore(pass);
+    }
+
+    /**
+     * Build message with input params
+     *
+     * @param {string} type
+     * @param input
+     * @returns {Msg}
+     */
+    buildMsg ({type = MsgSend.type, ...input}) {
+        return this.msgBuilder.getMsgType(type).build(input);
+    }
+
+    /**
+     * Build std msg prepared for sign
+     *
+     * @param {Msg} msg
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+
+     * @returns {StdSignMsg}
+     */
+    buildSignMsg (msg, txInfo) {
+        return this.txBuilder.build(msg, {
+            chainId: this.chainId,
+            ...txInfo,
+        });
+    }
+
+    /**
+     * Sign message using account
+     *
+     * @param {StdSignMsg} stdSignMsg
+     * @param {Account} account
+     * @returns {*}
+     */
+    signWithAccount (stdSignMsg, account) {
+        if (!account) {
+            throw new Error('account object was not set or invalid');
+        }
+
+        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKeyEncoded());
+    }
+
+    /**
+     * Sign message using private key of the account
+     *
+     * @param {StdSignMsg} stdSignMsg
+     * @param privateKey
+     * @param {string} publicKey
+     * @returns {StdTx}
+     */
+    sign (stdSignMsg, privateKey, publicKey) {
+        return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
+    }
+
+    /**
+     * Build, sign and broadcast message
+     *
+     * @param msg {{type: string}}
+     * @param privateKey
+     * @param {string} publicKey
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+     * @returns {StdTx}
+     */
+    buildSign (msg, {privateKey, publicKey, ...txInfo}) {
+        if (!msg) {
+            throw new Error('msg object was not set or invalid');
+        }
+
+        return this.sign(
+            this.buildSignMsg(
+                this.buildMsg(msg), txInfo), privateKey, publicKey);
+    }
+
+    /**
+     * Build, sign and broadcast message
+     *
+     * @param msg {{type: string}}
+     * @param txInfo {{privateKey: *, publicKey: string, fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+     * @returns {Promise<*>}
+     */
+    buildSignBroadcast (msg, txInfo) {
+        return this.broadcastTx(
+            this.buildSign(msg, txInfo));
     }
 
     // --------------- api ------------------
@@ -126,7 +266,7 @@ class Chain {
     /**
      * Fetch balance of account by address
      *
-     * @param address
+     * @param {string} address
      * @returns {Promise<*>}
      */
     fetchAccountBalance (address) {
@@ -155,17 +295,15 @@ class Chain {
     }
 
     /**
-     * Fetch all transactions
-     *
+     * Fetch transactions
+     * @param {string|*} action
      * @param params
      * @returns {Promise<*>}
      */
-    fetchTransactions (params = {}) {
-        let {action} = params;
+    fetchTransactions ({action, ...params}) {
         if (!action) {
             action = 'send';
         }
-        delete params.action;
 
         return get(this.apiUrl, {
             path: '/txs',
@@ -177,9 +315,9 @@ class Chain {
     }
 
     /**
-     * Fetch all transaction
+     * Fetch last transaction
      *
-     * @param limit
+     * @param {number} limit
      * @returns {Promise<*>}
      */
     async fetchLastTransactions (limit = 5) {
@@ -200,13 +338,14 @@ class Chain {
      */
     async fetchTotalTransactionsCount (params = {}) {
         const {total_count} = await this.fetchTransactions(params);
+
         return total_count;
     }
 
     /**
      * Fetch a transaction by hash in a committed block.
      *
-     * @param hash
+     * @param {string} hash
      * @returns {Promise<*>}
      */
     fetchTransaction (hash) {
@@ -222,8 +361,8 @@ class Chain {
     /**
      * Fetch transaction where the address is a sender
      *
-     * @param address
-     * @param params
+     * @param {string} address
+     * @param params {{ limit: number, page: number|* }}
      * @returns {Promise<*>}
      */
     fetchOutboundTransactions (address, params = {limit: 30}) {
@@ -244,8 +383,8 @@ class Chain {
     /**
      * Fetch transactions where the address is a recipient
      *
-     * @param address
-     * @param params
+     * @param {string} address
+     * @param params {{ limit: number, page: number|* }}
      * @returns {Promise<*>}
      */
     fetchInboundTransactions (address, params = {limit: 30}) {
@@ -263,7 +402,8 @@ class Chain {
     }
 
     /**
-     * Search transactions.
+     * Search transactions by events.
+     *
      * Genesis transactions are returned if the height parameter is set to zero,
      * otherwise the transactions are searched for by events
      *
@@ -278,22 +418,77 @@ class Chain {
     }
 
     /**
+     * Broadcast a signed tx to a full node
+     *
      * BroadcastTx broadcasts a transactions either synchronously or asynchronously
      * based on the context parameters.
      * "block"(return after tx commit), "sync"(return afer CheckTx) and "async"(return right away).
      *
-     * @param signedTx
-     * @param mode sync | async | block
+     * @param {StdTx} tx
+     * @param {string} mode
      * @returns {Promise<*>}
      */
-    broadcastTx (signedTx, mode = 'sync') {
+    broadcastTx (tx, mode = 'sync') {
         return post(this.apiUrl, {
             path: '/txs',
             data: {
-                tx: signedTx,
+                tx,
                 mode,
             },
         });
+    }
+
+    /**
+     * Send coins from one account to another
+     *
+     * @param {Account} from
+     * @param params {{to: string, amount, fee, gas, memo: string}}
+     * @returns {*}
+     */
+    async transferWithAccount ({from, ...params}) {
+        if (!from) {
+            throw new Error('from object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(from.getAddress());
+        from.updateInfo(value);
+
+        return this.transfer({
+            ...params,
+            from: from.getAddress(),
+            privateKey: from.getPrivateKey(),
+            publicKey: from.getPublicKeyEncoded(),
+            accountNumber: from.getAccountNumber(),
+            sequence: from.getSequence(),
+        });
+    }
+
+    /**
+     * Send coins from one account to another
+     *
+     * @param {string} from
+     * @param {string} to
+     * @param amount
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {*}
+     */
+    transfer ({from, to, amount, ...txInfo}) {
+        if (!from) {
+            throw new Error('from object was not set or invalid');
+        }
+        if (!to) {
+            throw new Error('to object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('chainId object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgSend.type,
+            from,
+            to,
+            amount,
+        }, txInfo);
     }
 
     /**
@@ -308,9 +503,9 @@ class Chain {
     }
 
     /**
-     * Fetch the supply of a single denom
+     * Fetch the supply of a single coin denomination
      *
-     * @param       denom       Token denom
+     * @param {string} denom Coin denom
      * @returns {Promise<*>}
      */
     fetchSupplyDenom (denom) {
@@ -335,10 +530,22 @@ class Chain {
     }
 
     /**
+     * Fetch the current state of the staking pool
+     *
+     * @returns {Promise<*>}
+     */
+    fetchStakingParameters () {
+        return get(this.apiUrl, {
+            path: '/staking/parameters',
+        });
+    }
+
+    /**
      * Fetch staking validators. Get all validator candidates.
      * By default it returns only the bonded validators.
-     * @param status The validator bond status. Must be either 'bonded’, 'unbonded’, or 'unbonding’.
-     * @param params page, limit
+     *
+     * @param {string} status The validator bond status. Must be either 'bonded’, 'unbonded’, or 'unbonding’.
+     * @param params {{ page: number, limit: number }}
      * @returns {Promise<*>}
      */
     fetchValidators (status = undefined, params = {}) {
@@ -353,7 +560,7 @@ class Chain {
     /**
      * Fetch the information from a single validator
      *
-     * @param validatorAddr Bech32 OperatorAddress of Validator
+     * @param {string} validatorAddr Bech32 OperatorAddress of Validator
      * @returns {Promise<*>}
      */
     fetchValidatorDetails (validatorAddr) {
@@ -367,9 +574,41 @@ class Chain {
     }
 
     /**
+     * Fetch all delegations from a validator
+     *
+     * @param {string} validatorAddr Bech32 OperatorAddress of Validator
+     * @returns {Promise<*>}
+     */
+    fetchValidatorDelegations (validatorAddr) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/validators/${validatorAddr}/delegations`,
+        });
+    }
+
+    /**
+     * Fetch all unbonding delegations from a validator
+     *
+     * @param {string} validatorAddr Bech32 OperatorAddress of Validator
+     * @returns {Promise<*>}
+     */
+    fetchValidatorUnbondingDelegations (validatorAddr) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/staking/validators/${validatorAddr}/unbonding_delegations`,
+        });
+    }
+
+    /**
      * Fetch all delegations from a delegator
      *
-     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
      * @returns {Promise<*>}
      */
     fetchDelegatorDelegations (delegatorAddr) {
@@ -385,8 +624,8 @@ class Chain {
     /**
      * Fetch the current delegation between a delegator and a validator
      *
-     * @param delegatorAddr Bech32 AccAddress of Delegator
-     * @param validatorAddr Bech32 OperatorAddress of validator
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} validatorAddr Bech32 OperatorAddress of validator
      * @returns {Promise<*>}
      */
     fetchDelegatorDelegation (delegatorAddr, validatorAddr) {
@@ -405,7 +644,7 @@ class Chain {
     /**
      * Fetch all unbonding delegations from a delegator
      *
-     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
      * @returns {Promise<*>}
      */
     fetchDelegatorUnbondingDelegations (delegatorAddr) {
@@ -419,10 +658,10 @@ class Chain {
     }
 
     /**
-     * Fetch the current unbonding delegation from a delegator with the validator
+     * Fetch all unbonding delegations between a delegator and a validator
      *
-     * @param delegatorAddr Bech32 AccAddress of Delegator
-     * @param validatorAddr Bech32 AccAddress of Validator
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} validatorAddr Bech32 AccAddress of Validator
      * @returns {Promise<*>}
      */
     fetchDelegatorUnbondingDelegation (delegatorAddr, validatorAddr) {
@@ -439,9 +678,192 @@ class Chain {
     }
 
     /**
+     * Fetch all redelegations
+     *
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} validatorSrcAddr Bech32 AccAddress of SrcValidator
+     * @param {string} validatorDstAddr Bech32 AccAddress of DstValidator
+     * @returns {Promise<*>}
+     */
+    fetchDelegatorRedelegations (delegatorAddr, validatorSrcAddr, validatorDstAddr) {
+        return get(this.apiUrl, {
+            path: '/staking/redelegations',
+            query: {
+                delegator_address: delegatorAddr,
+                validator_from: validatorSrcAddr,
+                validator_to: validatorDstAddr,
+            },
+        });
+    }
+
+    /**
+     * Submit the delegation with account
+     *
+     * @param {Account} delegator
+     * @param params {{amount: *, fee: *, validatorAddr: string}}
+     * @returns {*}
+     */
+    async delegateWithAccount ({delegator, ...params}) {
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(delegator.getAddress());
+        delegator.updateInfo(value);
+
+        return this.delegate({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Submit delegation
+     *
+     * @param {string} delegatorAddr
+     * @param {string} validatorAddr
+     * @param amount
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {*}
+     */
+    delegate ({delegatorAddr, validatorAddr, amount, ...txInfo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('amount object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgDelegate.type,
+            delegatorAddr,
+            validatorAddr,
+            amount,
+        }, txInfo);
+    }
+
+    /**
+     * Submit a redelegation
+     *
+     * @param {Account} delegator
+     * @param params {{amount: *, fee: *, validatorSrcAddr: string, validatorDstAddr: string}}
+     * @returns {*}
+     */
+    async redelegateWithAccount ({delegator, ...params}) {
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(delegator.getAddress());
+        delegator.updateInfo(value);
+
+        return this.redelegate({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Submit a redelegation
+     *
+     * @param {string} delegatorAddr
+     * @param {string} validatorSrcAddr
+     * @param {string} validatorDstAddr
+     * @param amount
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {*}
+     */
+    redelegate ({delegatorAddr, validatorSrcAddr, validatorDstAddr, amount, ...txInfo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorSrcAddr) {
+            throw new Error('validatorSrcAddr object was not set or invalid');
+        }
+        if (!validatorDstAddr) {
+            throw new Error('validatorDstAddr object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('amount object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgBeginRedelegate.type,
+            delegatorAddr,
+            validatorSrcAddr,
+            validatorDstAddr,
+            amount,
+        }, txInfo);
+    }
+
+    /**
+     * Submit an unbonding delegation
+     *
+     * @param {Account} delegator
+     * @param params {{amount: *, fee: *, validatorAddr: string}}
+     * @returns {*}
+     */
+    async undelegateWithAccount ({delegator, ...params}) {
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(delegator.getAddress());
+        delegator.updateInfo(value);
+
+        return this.undelegate({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Submit an unbonding delegation
+     *
+     * @param {string} delegatorAddr
+     * @param {string} validatorAddr
+     * @param amount
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {*}
+     */
+    undelegate ({delegatorAddr, validatorAddr, amount, ...txInfo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('amount object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgUndelegate.type,
+            delegatorAddr,
+            validatorAddr,
+            amount,
+        }, txInfo);
+    }
+
+    /**
      * Fetch the total rewards balance from all delegations
      *
-     * @param delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
      * @returns {Promise<*>}
      */
     fetchDelegatorRewards (delegatorAddr) {
@@ -457,8 +879,8 @@ class Chain {
     /**
      * Fetch a delegation reward
      *
-     * @param delegatorAddr Bech32 AccAddress of Delegator
-     * @param validatorAddr Bech32 OperatorAddress of validator
+     * @param {string} delegatorAddr Bech32 AccAddress of Delegator
+     * @param {string} validatorAddr Bech32 OperatorAddress of validator
      * @returns {Promise<*>}
      */
     fetchDelegatorReward (delegatorAddr, validatorAddr) {
@@ -475,9 +897,94 @@ class Chain {
     }
 
     /**
+     * Withdraw a delegation reward
+     *
+     * @param {Account} delegator
+     * @param params {{delegator: Account, validatorAddr: string}}
+     * @returns {*}
+     */
+    withDrawDelegationRewardWithAccount ({delegator, ...params}) {
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.withDrawDelegationReward({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Withdraw a delegation reward
+     *
+     * @param {string} delegatorAddr
+     * @param {string} validatorAddr
+     * @param txInfo {{accountNumber: number, gas: number, memo: string, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    withDrawDelegationReward ({delegatorAddr, validatorAddr, ...txInfo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgWithdrawDelegationReward.type,
+            delegatorAddr,
+            validatorAddr,
+        }, txInfo);
+    }
+
+    /**
+     * Withdraw all the delegator's delegation rewards
+     *
+     * @param {Account} delegator
+     * @param params
+     * @returns {Promise<*>}
+     */
+    withDrawDelegationRewardsWithAccount ({delegator, ...params}) {
+        if (!delegator) {
+            throw new Error('delegator object was not set or invalid');
+        }
+
+        return this.withDrawDelegationsReward({
+            ...params,
+            delegatorAddr: delegator.getAddress(),
+            privateKey: delegator.getPrivateKey(),
+            publicKey: delegator.getPublicKeyEncoded(),
+            accountNumber: delegator.getAccountNumber(),
+            sequence: delegator.getSequence(),
+        });
+    }
+
+    /**
+     * Withdraw all the delegator's delegation rewards
+     *
+     * @param {string} delegatorAddr
+     * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    withDrawDelegationsReward ({delegatorAddr, ...txInfo}) {
+        if (!delegatorAddr) {
+            throw new Error('delegatorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgWithdrawDelegationRewardsAll.type,
+            delegatorAddr,
+        }, txInfo);
+    }
+
+    /**
      * Fetch validator sets info
      *
-     * @param height
+     * @param {number} height
      * @returns {Promise<*>}
      */
     fetchValidatorSets (height) {
@@ -503,7 +1010,7 @@ class Chain {
     }
 
     /**
-     * Fetch gov propsal
+     * Fetch gov proposal
      *
      * @param id
      * @param params
@@ -518,435 +1025,6 @@ class Chain {
             path: `/gov/proposals/${id}`,
             query: params,
         });
-    }
-
-    // --------------- api ------------------
-
-    generateAccount () {
-        return new Account(this.bech32MainPrefix, this.path).generate();
-    }
-
-    recoverAccount (mnemonic) {
-        return new Account(this.bech32MainPrefix, this.path).recover(mnemonic);
-    }
-
-    importAccountFromV3KeyStore (keyStore, pass) {
-        return new Account(this.bech32MainPrefix, this.path).fromV3KeyStore(keyStore, pass);
-    }
-
-    exportAccountToV3KeyStore (account, pass) {
-        return account.toV3KeyStore(pass);
-    }
-
-    buildMsg (input = {
-        type: 'cosmos-sdk/MsgSend',
-        from_address: '',
-        to_address: '',
-        denom: DEFAULT_DENOM,
-        amount: 0,
-    }) {
-        const msgType = this.msgBuilder.getMsgType(input.type);
-
-        return msgType.build(input);
-    }
-
-    /**
-     *
-     * @param msg
-     * @param txInfo
-     * @returns {StdSignMsg}
-     */
-    buildSignMsg (msg, txInfo = {
-        chainId: this.chainId,
-        fee: {
-            denom: DEFAULT_DENOM,
-            amount: DEFAULT_FEE,
-        },
-        gas: DEFAULT_GAS,
-        memo: '',
-        accountNumber: 0,
-        sequence: 0,
-    }) {
-        return this.txBuilder.build(msg, txInfo);
-    }
-
-    signWithAccount (stdSignMsg, account) {
-        return this.sign(stdSignMsg, account.getPrivateKey(), account.getPublicKeyEncoded());
-    }
-
-    sign (stdSignMsg, privateKey, publicKey) {
-        return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
-    }
-
-    /**
-     *
-     * @param msg {{amount: *, from: *, to: *, type: string}}
-     * @param fee
-     * @param gas
-     * @param memo
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @returns {Promise<*>}
-     */
-    buildSignBroadcast (msg, {
-        fee = {
-            amount: DEFAULT_FEE,
-            denom: DEFAULT_DENOM,
-        },
-        gas = DEFAULT_GAS,
-        memo = '',
-    }, {accountNumber, sequence, privateKey, publicKey}) {
-        if (!this.chainId) {
-            throw new Error('chainId object was not set or invalid');
-        }
-        if (!msg) {
-            throw new Error('msg object was not set or invalid');
-        }
-        if (!accountNumber) {
-            throw new Error('accountNumber object was not set or invalid');
-        }
-        if (!sequence) {
-            throw new Error('sequence object was not set or invalid');
-        }
-        if (!privateKey) {
-            throw new Error('privateKey object was not set or invalid');
-        }
-        if (!publicKey) {
-            throw new Error('publicKey object was not set or invalid');
-        }
-
-        const stdMsg = this.buildMsg(msg);
-        const tx = this.buildSignMsg(stdMsg, {
-            chainId: this.chainId,
-            fee,
-            gas,
-            memo,
-            accountNumber,
-            sequence,
-        });
-        const signedTx = this.sign(tx, privateKey, publicKey);
-
-        return this.broadcastTx(signedTx);
-    }
-
-    /**
-     *
-     * @param params {from, to, amount, fee, gas, memo}
-     * @returns {*}
-     */
-    transferWithAccount (params) {
-        const {from} = params;
-        if (!from) {
-            throw new Error('from object was not set or invalid');
-        }
-
-        return this.transfer({
-            ...params,
-            from: from.getAddress(),
-            privateKey: from.getPrivateKey(),
-            publicKey: from.getPublicKeyEncoded(),
-            accountNumber: from.getAccountNumber(),
-            sequence: from.getSequence(),
-        });
-    }
-
-    /**
-     *
-     * @param from
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @param to
-     * @param amount
-     * @param fee
-     * @param gas
-     * @param memo
-     * @returns {*}
-     */
-    transfer ({from, accountNumber, sequence, privateKey, publicKey, to, amount, fee, gas, memo}) {
-        if (!from) {
-            throw new Error('from object was not set or invalid');
-        }
-        if (!to) {
-            throw new Error('to object was not set or invalid');
-        }
-        if (!amount) {
-            throw new Error('chainId object was not set or invalid');
-        }
-
-        return this.buildSignBroadcast({
-            type: 'cosmos-sdk/MsgSend',
-            from,
-            to,
-            amount,
-        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
-    }
-
-    /**
-     *
-     * @param params {delegator, validator, amount, fee, gas, memo}
-     * @returns {*}
-     */
-    delegateWithAccount (params) {
-        const {delegator} = params;
-        if (!delegator) {
-            throw new Error('delegator object was not set or invalid');
-        }
-
-        return this.delegate({
-            ...params,
-            delegatorAddr: delegator.getAddress(),
-            privateKey: delegator.getPrivateKey(),
-            publicKey: delegator.getPublicKeyEncoded(),
-            accountNumber: delegator.getAccountNumber(),
-            sequence: delegator.getSequence(),
-        });
-    }
-
-    /**
-     *
-     * @param delegatorAddr
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @param validatorAddr
-     * @param amount
-     * @param fee
-     * @param gas
-     * @param memo
-     * @returns {*}
-     */
-    delegate ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddr, amount, fee, gas, memo}) {
-        if (!delegatorAddr) {
-            throw new Error('delegatorAddr object was not set or invalid');
-        }
-        if (!validatorAddr) {
-            throw new Error('validatorAddr object was not set or invalid');
-        }
-        if (!amount) {
-            throw new Error('amount object was not set or invalid');
-        }
-
-        return this.buildSignBroadcast({
-            type: 'cosmos-sdk/MsgDelegate',
-            delegatorAddr,
-            validatorAddr,
-            amount,
-        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
-    }
-
-    /**
-     *
-     * @param params {delegator, validatorAddrFrom, validatorAddrTo, amount, fee, gas, memo}
-     * @returns {*}
-     */
-    redelegateWithAccount (params) {
-        const {delegator} = params;
-        if (!delegator) {
-            throw new Error('delegator object was not set or invalid');
-        }
-
-        return this.redelegate({
-            ...params,
-            delegatorAddr: delegator.getAddress(),
-            privateKey: delegator.getPrivateKey(),
-            publicKey: delegator.getPublicKeyEncoded(),
-            accountNumber: delegator.getAccountNumber(),
-            sequence: delegator.getSequence(),
-        });
-    }
-
-    /**
-     *
-     * @param delegatorAddr
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @param validatorAddrFrom
-     * @param validatorAddrTo
-     * @param amount
-     * @param fee
-     * @param gas
-     * @param memo
-     * @returns {*}
-     */
-    redelegate ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddrFrom, validatorAddrTo, amount, fee, gas, memo}) {
-        if (!delegatorAddr) {
-            throw new Error('delegatorAddr object was not set or invalid');
-        }
-        if (!validatorAddrFrom) {
-            throw new Error('validatorAddrFrom object was not set or invalid');
-        }
-        if (!validatorAddrTo) {
-            throw new Error('validatorAddrTo object was not set or invalid');
-        }
-        if (!amount) {
-            throw new Error('amount object was not set or invalid');
-        }
-
-        return this.buildSignBroadcast({
-            type: 'cosmos-sdk/MsgBeginRedelegate',
-            delegatorAddr,
-            validatorAddrFrom,
-            validatorAddrTo,
-            amount,
-        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
-    }
-
-    /**
-     *
-     * @param params {delegator, validator, amount, fee, gas, memo}
-     * @returns {*}
-     */
-    undelegateWithAccount (params) {
-        const {delegator} = params;
-        if (!delegator) {
-            throw new Error('delegator object was not set or invalid');
-        }
-
-        return this.undelegate({
-            ...params,
-            delegatorAddr: delegator.getAddress(),
-            privateKey: delegator.getPrivateKey(),
-            publicKey: delegator.getPublicKeyEncoded(),
-            accountNumber: delegator.getAccountNumber(),
-            sequence: delegator.getSequence(),
-        });
-    }
-
-    /**
-     *
-     * @param delegatorAddr
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @param validatorAddr
-     * @param amount
-     * @param fee
-     * @param gas
-     * @param memo
-     * @returns {*}
-     */
-    undelegate ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddr, amount, fee, gas, memo}) {
-        if (!delegatorAddr) {
-            throw new Error('delegatorAddr object was not set or invalid');
-        }
-        if (!validatorAddr) {
-            throw new Error('validatorAddr object was not set or invalid');
-        }
-        if (!amount) {
-            throw new Error('amount object was not set or invalid');
-        }
-
-        return this.buildSignBroadcast({
-            type: 'cosmos-sdk/MsgUndelegate',
-            delegatorAddr,
-            validatorAddr,
-            amount,
-        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
-    }
-
-    /**
-     * Withdraw a delegation reward
-     *
-     * @param params {delegator, validatorAddr}
-     * @returns {*}
-     */
-    withDrawDelegationRewardWithAccount (params) {
-        const {delegator} = params;
-        if (!delegator) {
-            throw new Error('delegator object was not set or invalid');
-        }
-
-        return this.withDrawDelegationReward({
-            ...params,
-            delegatorAddr: delegator.getAddress(),
-            privateKey: delegator.getPrivateKey(),
-            publicKey: delegator.getPublicKeyEncoded(),
-            accountNumber: delegator.getAccountNumber(),
-            sequence: delegator.getSequence(),
-        });
-    }
-
-    /**
-     * Withdraw a delegation reward
-     *
-     * @param delegatorAddr
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @param validatorAddr
-     * @param fee
-     * @param gas
-     * @param memo
-     * @returns {Promise<*>}
-     */
-    withDrawDelegationReward ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, validatorAddr, fee, gas, memo}) {
-        if (!delegatorAddr) {
-            throw new Error('delegatorAddr object was not set or invalid');
-        }
-        if (!validatorAddr) {
-            throw new Error('validatorAddr object was not set or invalid');
-        }
-
-        return this.buildSignBroadcast({
-            type: 'cosmos-sdk/MsgWithdrawDelegationReward',
-            delegatorAddr,
-            validatorAddr,
-        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
-    }
-
-    /**
-     * Withdraw all the delegator's delegation rewards
-     *
-     * @param params {delegator}
-     * @returns {Promise<*>}
-     */
-    withDrawDelegationRewardsWithAccount (params) {
-        const {delegator} = params;
-        if (!delegator) {
-            throw new Error('delegator object was not set or invalid');
-        }
-
-        return this.withDrawDelegationsReward({
-            ...params,
-            delegatorAddr: delegator.getAddress(),
-            privateKey: delegator.getPrivateKey(),
-            publicKey: delegator.getPublicKeyEncoded(),
-            accountNumber: delegator.getAccountNumber(),
-            sequence: delegator.getSequence(),
-        });
-    }
-
-    /**
-     * Withdraw all the delegator's delegation rewards
-     *
-     * @param delegatorAddr
-     * @param accountNumber
-     * @param sequence
-     * @param privateKey
-     * @param publicKey
-     * @param fee
-     * @param gas
-     * @param memo
-     * @returns {Promise<*>}
-     */
-    withDrawDelegationsReward ({delegatorAddr, accountNumber, sequence, privateKey, publicKey, fee, gas, memo}) {
-        if (!delegatorAddr) {
-            throw new Error('delegatorAddr object was not set or invalid');
-        }
-
-        return this.buildSignBroadcast({
-            type: 'cosmos-sdk/MsgWithdrawDelegationRewardsAll',
-            delegatorAddr,
-        }, {fee, gas, memo}, {accountNumber, sequence, privateKey, publicKey});
     }
 }
 

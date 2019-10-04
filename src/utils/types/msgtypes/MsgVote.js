@@ -1,4 +1,4 @@
-const MsgType = require('../MsgType');
+const MsgType = require('../Msg');
 
 const type = 'cosmos-sdk/MsgVote';
 
@@ -15,7 +15,7 @@ function builder({option, proposal_id, voter}) {
     ];
 }
 
-module.exports = new MsgType({
+module.exports = new Msg({
     type,
     builder
 });

@@ -1,4 +1,4 @@
-import MsgType from '../MsgType';
+import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgWithdrawDelegationRewardsAll';
 
@@ -13,7 +13,7 @@ function builder ({delegatorAddr}) {
     ];
 }
 
-export default new MsgType({
+export default new Msg({
     type,
     builder,
 });

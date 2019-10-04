@@ -1,4 +1,4 @@
-const MsgType = require('../MsgType');
+const MsgType = require('../Msg');
 
 const type = 'cosmos-sdk/MsgModifyWithdrawAddress';
 
@@ -14,7 +14,7 @@ function builder({delegator_address, withdraw_address}) {
     ];
 }
 
-module.exports = new MsgType({
+module.exports = new Msg({
     type,
     builder
 });

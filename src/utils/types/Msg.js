@@ -1,4 +1,4 @@
-export default class MsgType {
+export default class Msg {
     constructor ({type, builder}) {
         this.type = type;
         this.builder = builder;
