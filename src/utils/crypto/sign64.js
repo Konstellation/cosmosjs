@@ -2,7 +2,7 @@ import secp256k1 from 'secp256k1';
 import crypto from 'crypto';
 import sortObject from '../encode/sortObject';
 
-function sign64(msg, privateKey) {
+function sign64 (msg, privateKey) {
     const hash = crypto.createHash('sha256')
         .update(JSON.stringify(sortObject(msg)))
         .digest('hex');

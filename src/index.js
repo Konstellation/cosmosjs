@@ -18,7 +18,7 @@ import MsgUndelegate from './utils/types/msgtypes/MsgUndelegate';
 import MsgWithdrawDelegationReward from './utils/types/msgtypes/MsgWithdrawDelegationReward';
 import MsgWithdrawDelegationRewardsAll
     from './utils/types/msgtypes/MsgWithdrawDelegationRewardsAll';
-import Socket from "./ws";
+import Socket from './ws';
 
 class Chain {
     constructor ({
@@ -92,8 +92,9 @@ class Chain {
      * @returns {Account}
      */
     importAccount ({keyStore, pass, mnemonic}) {
-        if ((!keyStore || !pass) || ((!keyStore || !pass) && !mnemonic))
+        if ((!keyStore || !pass) || ((!keyStore || !pass) && !mnemonic)) {
             throw new Error('secret info was not set or invalid');
+        }
 
         return mnemonic
             ? this.recoverAccount(mnemonic)
@@ -119,7 +120,8 @@ class Chain {
      * @returns {Msg}
      */
     buildMsg ({type = MsgSend.type, ...input}) {
-        return this.msgBuilder.getMsgType(type).build(input);
+        return this.msgBuilder.getMsgType(type)
+            .build(input);
     }
 
     /**
@@ -250,8 +252,11 @@ class Chain {
             throw new Error('height was not set or invalid');
         }
 
-        return get(this.apiUrl, {
-            path: `/blocks/${height}`,
+        return get(this.nodeUrl, {
+            path: '/block',
+            query: {
+                height,
+            },
         });
     }
 
@@ -1109,14 +1114,48 @@ class Chain {
 
     // --------------- ws ------------------
 
+    /**
+     * Subscribe for new block event
+     *
+     * @param {function} handler
+     */
     subscribeNewBlock (handler) {
         this.socket.subscribe('tm.event = \'NewBlock\'', handler);
     }
 
+    /**
+     * Subscribe for new tx event
+     *
+     * @param {function} handler
+     */
     subscribeNewTx (handler) {
         this.socket.subscribe('tm.event = \'Tx\'', handler);
     }
 
+    /**
+     * Subscribe for txs where addr received funds
+     *
+     * @param {function} handler
+     * @param {string} addr
+     */
+    subscribeNewTxToRecipient (handler, addr) {
+        this.socket.subscribe(`tm.event = 'Tx' AND transfer.recipient = '${addr}'`, handler);
+    }
+
+    /**
+     * Subscribe for txs where addr transferred funds
+     *
+     * @param {function} handler
+     * @param {string} addr
+     */
+    subscribeNewTxFromRecipient (handler, addr) {
+        this.socket.subscribe(`tm.event = 'Tx' AND transfer.sender = '${addr}'`, handler);
+    }
+
+    /**
+     * Connect to node's websocket
+     *
+     */
     connect () {
         this.socket.connect();
     }

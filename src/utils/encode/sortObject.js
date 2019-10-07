@@ -1,4 +1,4 @@
-function sortObject(obj) {
+function sortObject (obj) {
     if (obj === null) return null;
     if (typeof obj !== 'object') return obj;
     if (Array.isArray(obj)) return obj.map(sortObject);

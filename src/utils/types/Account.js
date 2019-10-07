@@ -7,13 +7,13 @@ export default class Account {
         this.keyPair = new AccountKeyPair(bech32MainPrefix, path);
     }
 
-    generate() {
+    generate () {
         this.keyPair.generate();
 
         return this;
     }
 
-    recover(mnemonic) {
+    recover (mnemonic) {
         this.keyPair.recover(mnemonic);
 
         return this;
@@ -33,15 +33,15 @@ export default class Account {
         return this;
     }
 
-    getAddress() {
+    getAddress () {
         return this.keyPair.getAddress();
     }
 
-    getECPair() {
+    getECPair () {
         return this.keyPair.getECPair();
     }
 
-    getPrivateKey() {
+    getPrivateKey () {
         return this.keyPair.getPrivateKey();
     }
 
@@ -49,7 +49,7 @@ export default class Account {
         return this.keyPair.getPrivateKeyEncoded();
     }
 
-    getPublicKey() {
+    getPublicKey () {
         return this.keyPair.getPublicKey();
     }
 
@@ -61,18 +61,18 @@ export default class Account {
         return this.keyPair.getMnemonic();
     }
 
-    updateInfo({account_number, sequence}) {
+    updateInfo ({account_number, sequence}) {
         this.sequence = sequence;
         this.accountNumber = account_number;
 
         return this;
     }
 
-    getSequence() {
+    getSequence () {
         return this.sequence;
     }
 
-    getAccountNumber() {
+    getAccountNumber () {
         return this.accountNumber;
     }
 }
