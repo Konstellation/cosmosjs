@@ -140,6 +140,16 @@ class Chain {
     }
 
     /**
+     * Build base requirement for direct request
+     *
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+     * @returns {BaseReq}
+     */
+    buildBaseReq (txInfo) {
+        return this.txBuilder.baseReq(txInfo);
+    }
+
+    /**
      * Sign message using account
      *
      * @param {StdSignMsg} stdSignMsg
@@ -184,7 +194,30 @@ class Chain {
             this.buildSignMsg(
                 this.buildMsg(msg),
                 txInfo,
-            ), privateKey, publicKey,
+            ),
+            privateKey,
+            publicKey,
+        );
+    }
+
+    /**
+     * Build, sign and broadcast message
+     *
+     * @param msg
+     * @param privateKey
+     * @param {string} publicKey
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+     * @returns {StdTx}
+     */
+    buildSignTx ({value: {msg}}, {privateKey, publicKey, ...txInfo}) {
+        if (!msg) {
+            throw new Error('msg object was not set or invalid');
+        }
+
+        return this.sign(
+            this.buildSignMsg(msg, txInfo),
+            privateKey,
+            publicKey,
         );
     }
 
@@ -198,6 +231,19 @@ class Chain {
     buildSignBroadcast (msg, txInfo) {
         return this.broadcastTx(
             this.buildSign(msg, txInfo),
+        );
+    }
+
+    /**
+     * Sign and broadcast tx
+     *
+     * @param stdTx
+     * @param txInfo {{privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    buildSignBroadcastTx (stdTx, txInfo) {
+        return this.broadcastTx(
+            this.buildSignTx(stdTx, txInfo),
         );
     }
 
@@ -874,6 +920,10 @@ class Chain {
         }, txInfo);
     }
 
+    createValidatorWithAccount () {
+
+    }
+
     /**
      * Fetch fee distribution parameters
      *
@@ -940,10 +990,13 @@ class Chain {
      * @param params {{delegator: Account, validatorAddr: string}}
      * @returns {*}
      */
-    withDrawDelegationRewardWithAccount ({delegator, ...params}) {
+    async withDrawDelegationRewardWithAccount ({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
+
+        const {result: {value}} = await this.fetchAccount(delegator.getAddress());
+        delegator.updateInfo(value);
 
         return this.withDrawDelegationReward({
             ...params,
@@ -963,7 +1016,7 @@ class Chain {
      * @param txInfo {{accountNumber: number, gas: number, memo: string, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    withDrawDelegationReward ({delegatorAddr, validatorAddr, ...txInfo}) {
+    async withDrawDelegationReward ({delegatorAddr, validatorAddr, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -971,11 +1024,18 @@ class Chain {
             throw new Error('validatorAddr object was not set or invalid');
         }
 
-        return this.buildSignBroadcast({
-            type: MsgWithdrawDelegationReward.type,
-            delegatorAddr,
-            validatorAddr,
-        }, txInfo);
+        const tx = await post(this.apiUrl, {
+            path: `/distribution/delegators/${delegatorAddr}/rewards/${validatorAddr}`,
+            data: {
+                ...this.buildBaseReq({
+                    chainId: this.chainId,
+                    from: delegatorAddr,
+                    ...txInfo,
+                }),
+            },
+        });
+
+        return this.buildSignBroadcastTx(tx, txInfo);
     }
 
     /**
@@ -985,10 +1045,13 @@ class Chain {
      * @param params
      * @returns {Promise<*>}
      */
-    withDrawDelegationRewardsWithAccount ({delegator, ...params}) {
+    async withDrawDelegationRewardsWithAccount ({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
+
+        const {result: {value}} = await this.fetchAccount(delegator.getAddress());
+        delegator.updateInfo(value);
 
         return this.withDrawDelegationsReward({
             ...params,

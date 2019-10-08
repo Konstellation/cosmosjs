@@ -19,6 +19,7 @@ export default function req (url, {method, path, query, data} = {}, log = false)
             body: JSON.stringify(data),
         };
     }
+    console.log(JSON.stringify(data));
 
     return fetch(url.toString(), reqObj).then(response => response.json());
 }

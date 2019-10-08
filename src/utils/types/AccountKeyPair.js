@@ -21,29 +21,6 @@ export default class AccountKeyPair {
         this.bech32MainPrefix = bech32MainPrefix || DEFAULT_BECH32_PREFIX;
     }
 
-    static isValidAddress (address, prefix = DEFAULT_BECH32_PREFIX) {
-        const preReg = new RegExp(`^${prefix}1`);
-        if (!preReg.test(address)) {
-            return false;
-        }
-
-        const allReg = new RegExp(/^[0-9a-zA-Z]*$/i);
-        if (!allReg.test(address)) {
-            return false;
-        }
-
-        try {
-            bech32.decode(address);
-            return true;
-        } catch (e) {
-            return false;
-        }
-    }
-
-    static isValidPrivate (privateKey) {
-        return /^[0-9a-fA-F]{64}$/i.test(privateKey);
-    }
-
     generate () {
         this.mnemonic = bip39.generateMnemonic(256);
         this.seed = bip39.mnemonicToSeed(this.mnemonic);
@@ -130,8 +107,31 @@ export default class AccountKeyPair {
         return AccountKeyPair.isValidAddress(this.getAddress(), this.bech32MainPrefix);
     }
 
+    static isValidAddress (address, prefix = DEFAULT_BECH32_PREFIX) {
+        const preReg = new RegExp(`^${prefix}1`);
+        if (!preReg.test(address)) {
+            return false;
+        }
+
+        const allReg = new RegExp(/^[0-9a-zA-Z]*$/i);
+        if (!allReg.test(address)) {
+            return false;
+        }
+
+        try {
+            bech32.decode(address);
+            return true;
+        } catch (e) {
+            return false;
+        }
+    }
+
     isValidPrivate () {
         return AccountKeyPair.isValidPrivate(this.getPrivateKeyEncoded())
+    }
+
+    static isValidPrivate (privateKey) {
+        return /^[0-9a-fA-F]{64}$/i.test(privateKey);
     }
 
     toV3KeyStore (password) {
