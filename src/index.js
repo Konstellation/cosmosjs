@@ -1,23 +1,23 @@
-import Account from './utils/types/Account';
-import TxBuilder from './utils/types/TxBuilder';
-import MsgBuilder from './utils/types/MsgBuilder';
+import Account from './types/Account';
+import TxBuilder from './types/TxBuilder';
+import MsgBuilder from './types/MsgBuilder';
 
 import get from './helpers/request/get';
 import post from './helpers/request/post';
 import req from './helpers/request/req';
 
 import {
-    DEFAULT_BECH32_PREFIX,
+    DEFAULT_BECH32_PREFIX, DEFAULT_DENOM,
     DEFAULT_KEY_PATH,
 } from './utils/constants';
 
-import MsgSend from './utils/types/msgtypes/MsgSend';
-import MsgDelegate from './utils/types/msgtypes/MsgDelegate';
-import MsgBeginRedelegate from './utils/types/msgtypes/MsgBeginRedelegate';
-import MsgUndelegate from './utils/types/msgtypes/MsgUndelegate';
-import MsgWithdrawDelegationReward from './utils/types/msgtypes/MsgWithdrawDelegationReward';
-import MsgWithdrawDelegationRewardsAll
-    from './utils/types/msgtypes/MsgWithdrawDelegationRewardsAll';
+import MsgSend from './types/msgtypes/MsgSend';
+import MsgDelegate from './types/msgtypes/MsgDelegate';
+import MsgBeginRedelegate from './types/msgtypes/MsgBeginRedelegate';
+import MsgUndelegate from './types/msgtypes/MsgUndelegate';
+import MsgUnjail from './types/msgtypes/MsgUnjail';
+import MsgDeposit from './types/msgtypes/MsgDeposit';
+
 import Socket from './ws';
 
 class Chain {
@@ -551,34 +551,23 @@ class Chain {
     }
 
     /**
-     * Fetch the total supply of coins
+     * Fetch validator sets info
      *
+     * @param {number} height
      * @returns {Promise<*>}
      */
-    fetchTotalSupply () {
-        return get(this.apiUrl, {
-            path: '/supply/total',
-        });
-    }
-
-    /**
-     * Fetch the supply of a single coin denomination
-     *
-     * @param {string} denom Coin denom
-     * @returns {Promise<*>}
-     */
-    fetchSupplyDenom (denom) {
-        if (!denom) {
-            throw new Error('denom was not set or invalid');
+    fetchValidatorSets (height) {
+        if (!height) {
+            throw new Error('height was not set or invalid');
         }
 
         return get(this.apiUrl, {
-            path: `/supply/total/${denom}`,
+            path: `/validatorsets/${height}`,
         });
     }
 
     /**
-     * Fetch the current state of the staking pool
+     * Fetch current state of the staking pool
      *
      * @returns {Promise<*>}
      */
@@ -589,7 +578,7 @@ class Chain {
     }
 
     /**
-     * Fetch the current state of the staking pool
+     * Fetch staking module parameters
      *
      * @returns {Promise<*>}
      */
@@ -984,13 +973,13 @@ class Chain {
     }
 
     /**
-     * Withdraw a delegation reward
+     * Withdraw a delegation reward with account
      *
      * @param {Account} delegator
      * @param params {{delegator: Account, validatorAddr: string}}
      * @returns {*}
      */
-    async withDrawDelegationRewardWithAccount ({delegator, ...params}) {
+    async withdrawDelegationRewardWithAccount ({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -998,7 +987,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.withDrawDelegationReward({
+        return this.withdrawDelegationReward({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -1016,7 +1005,7 @@ class Chain {
      * @param txInfo {{accountNumber: number, gas: number, memo: string, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async withDrawDelegationReward ({delegatorAddr, validatorAddr, ...txInfo}) {
+    async withdrawDelegationReward ({delegatorAddr, validatorAddr, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -1035,17 +1024,21 @@ class Chain {
             },
         });
 
+        if (!tx.value) {
+            throw new Error('tx value was not set or invalid');
+        }
+
         return this.buildSignBroadcastTx(tx, txInfo);
     }
 
     /**
-     * Withdraw all the delegator's delegation rewards
+     * Withdraw all the delegator's delegation rewards with account
      *
      * @param {Account} delegator
      * @param params
      * @returns {Promise<*>}
      */
-    async withDrawDelegationRewardsWithAccount ({delegator, ...params}) {
+    async withdrawDelegationRewardsWithAccount ({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -1053,7 +1046,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.withDrawDelegationsReward({
+        return this.withDrawDelegationRewards({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -1070,15 +1063,27 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    withDrawDelegationsReward ({delegatorAddr, ...txInfo}) {
+    async withDrawDelegationRewards ({delegatorAddr, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
 
-        return this.buildSignBroadcast({
-            type: MsgWithdrawDelegationRewardsAll.type,
-            delegatorAddr,
-        }, txInfo);
+        const tx = await post(this.apiUrl, {
+            path: `/distribution/delegators/${delegatorAddr}/rewards`,
+            data: {
+                ...this.buildBaseReq({
+                    chainId: this.chainId,
+                    from: delegatorAddr,
+                    ...txInfo,
+                }),
+            },
+        });
+
+        if (!tx.value) {
+            throw new Error('tx value was not set or invalid');
+        }
+
+        return this.buildSignBroadcastTx(tx, txInfo);
     }
 
     /**
@@ -1130,18 +1135,144 @@ class Chain {
     }
 
     /**
-     * Fetch validator sets info
+     * Fetch sign info of given all validators
+     */
+    fetchSlashingSigningInfos () {
+        return get(this.apiUrl, {
+            path: '/slashing/signing_infos',
+        });
+    }
+
+    /**
+     * Fetch slashing module parameters
+     */
+    fetchSlashingParameters () {
+        return get(this.apiUrl, {
+            path: '/slashing/parameters',
+        });
+    }
+
+    /**
+     * Unjail a jailed validator
      *
-     * @param {number} height
+     * @param {Account} validator from account
+     * @param {string} validatorAddr Bech32 validator address
+     * @param params
+     */
+    async fetchUnjailValidatorWithAccount ({validatorAddr, validator, ...params}) {
+        if (!validator) {
+            throw new Error('validator object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(validator.getAddress());
+        validator.updateInfo(value);
+
+        return this.fetchUnjailValidator({
+            ...params,
+            validatorAddr,
+            from: validator.getAddress(),
+            privateKey: validator.getPrivateKey(),
+            publicKey: validator.getPublicKeyEncoded(),
+            accountNumber: validator.getAccountNumber(),
+            sequence: validator.getSequence(),
+        });
+    }
+
+    /**
+     * Unjail a jailed validator
+     *
+     * @param {string} validatorAddr Bech32 validator address
+     * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     */
+    fetchUnjailValidator ({validatorAddr, ...txInfo}) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgUnjail.type,
+            validatorAddr,
+        }, txInfo);
+    }
+
+    /**
+     * Fetch the total supply of coins
+     *
      * @returns {Promise<*>}
      */
-    fetchValidatorSets (height) {
-        if (!height) {
-            throw new Error('height was not set or invalid');
+    fetchSupplyTotal () {
+        return get(this.apiUrl, {
+            path: '/supply/total',
+        });
+    }
+
+    /**
+     * Fetch the supply of a single coin denomination
+     *
+     * @param {string} denom Coin denom
+     * @returns {Promise<*>}
+     */
+    fetchSupplyDenom (denom) {
+        if (!denom) {
+            throw new Error('denom was not set or invalid');
         }
 
         return get(this.apiUrl, {
-            path: `/validatorsets/${height}`,
+            path: `/supply/total/${denom}`,
+        });
+    }
+
+    /**
+     * Fetch minting module parameters
+     */
+    fetchMintParameters () {
+        return get(this.apiUrl, {
+            path: '/mint/parameters',
+        });
+    }
+
+    /**
+     * Fetch current minting inflation value
+     */
+    fetchMintInflation () {
+        return get(this.apiUrl, {
+            path: '/mint/inflation',
+        });
+    }
+
+    /**
+     * Fetch current minting annual provisions value
+     */
+    fetchMintAnnualProvisions () {
+        return get(this.apiUrl, {
+            path: '/mint/annual-provisions',
+        });
+    }
+
+    /**
+     * Fetch governance deposit parameters
+     */
+    fetchGovDepositParameters () {
+        return get(this.apiUrl, {
+            path: '/gov/parameters/deposit',
+        });
+    }
+
+    /**
+     * Fetch governance tally parameters
+     */
+    fetchGovTallyingParameters () {
+        return get(this.apiUrl, {
+            path: '/gov/parameters/tallying',
+        });
+    }
+
+    /**
+     * Fetch governance votin parameters
+     */
+    fetchGovVotingParameters () {
+        return get(this.apiUrl, {
+            path: '/gov/parameters/voting',
         });
     }
 
@@ -1160,19 +1291,317 @@ class Chain {
     /**
      * Fetch gov proposal
      *
-     * @param id
-     * @param params
+     * @param {string} proposalId
      * @returns {Promise<*>}
      */
-    fetchGovProposal (id, params = {}) {
-        if (!id) {
+    fetchGovProposal (proposalId) {
+        if (!proposalId) {
             throw new Error('id was not set or invalid');
         }
 
         return get(this.apiUrl, {
-            path: `/gov/proposals/${id}`,
-            query: params,
+            path: `/gov/proposals/${proposalId}`,
         });
+    }
+
+    /**
+     * Fetch proposal proposer
+     *
+     * @param {string} proposalId
+     * @returns {Promise<*>}
+     */
+    fetchGovProposalProposer (proposalId) {
+        if (!proposalId) {
+            throw new Error('id not was set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/proposer`,
+        });
+    }
+
+    /**
+     * Fetch proposal deposits
+     *
+     * @param {string} proposalId
+     * @returns {Promise<*>}
+     */
+    fetchGovProposalDeposits (proposalId) {
+        if (!proposalId) {
+            throw new Error('proposalId not was set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/deposits`,
+        });
+    }
+
+    /**
+     * Fetch proposal deposit of depositor
+     *
+     * @param {string} proposalId
+     * @param {string} depositorAddr Bech32 OperatorAddress of depositor
+     * @returns {Promise<*>}
+     */
+    fetchGovProposalDeposit (proposalId, depositorAddr) {
+        if (!proposalId) {
+            throw new Error('id was not set or invalid');
+        }
+        if (!depositorAddr) {
+            throw new Error('depositorAddr was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/deposits/${depositorAddr}`,
+        });
+    }
+
+    /**
+     * Fetch proposal votes
+     *
+     * @param {string} proposalId
+     * @returns {Promise<*>}
+     */
+    fetchGovProposalVotes (proposalId) {
+        if (!proposalId) {
+            throw new Error('id not was set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/votes`,
+        });
+    }
+
+    /**
+     * Fetch proposal vote of voter
+     *
+     * @param {string} proposalId
+     * @param {string} voterAddr Bech32 OperatorAddress of depositor
+     * @returns {Promise<*>}
+     */
+    fetchGovProposalVote (proposalId, voterAddr) {
+        if (!proposalId) {
+            throw new Error('proposalId not was set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/votes/${voterAddr}`,
+        });
+    }
+
+    /**
+     * Fetch a proposal's tally result at the current time
+     *
+     * @param {string} proposalId
+     * @returns {Promise<*>}
+     */
+    fetchGovProposalTally (proposalId) {
+        if (!proposalId) {
+            throw new Error('proposalId not was set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/tally`,
+        });
+    }
+
+    /**
+     * Submit a proposal with account.
+     *
+     * @param {Account} proposer
+     * @param params {{title: string, description:string, proposalType: string, amount: number, denom: string, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async submitProposalWithAccount ({proposer, ...params}) {
+        if (!proposer) {
+            throw new Error('proposer object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(proposer.getAddress());
+        proposer.updateInfo(value);
+
+        return this.submitProposal({
+            ...params,
+            proposerAddr: proposer.getAddress(),
+            privateKey: proposer.getPrivateKey(),
+            publicKey: proposer.getPublicKeyEncoded(),
+            accountNumber: proposer.getAccountNumber(),
+            sequence: proposer.getSequence(),
+        });
+    }
+
+    /**
+     * Submit a proposal.
+     *
+     * @param {string} proposerAddr
+     * @param {string} title
+     * @param {string} description
+     * @param {string} proposalType
+     * @param {number} amount
+     * @param {string} denom
+     * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async submitProposal ({
+                              proposerAddr,
+                              title,
+                              description,
+                              proposalType,
+                              denom = DEFAULT_DENOM,
+                              amount = 0,
+                              ...txInfo
+                          }) {
+        if (!proposerAddr) {
+            throw new Error('proposerAddr object was not set or invalid');
+        }
+
+        const tx = await post(this.apiUrl, {
+            path: '/gov/proposals',
+            data: {
+                ...this.buildBaseReq({
+                    chainId: this.chainId,
+                    from: proposerAddr,
+                    ...txInfo,
+                }),
+                title,
+                description,
+                proposer: proposerAddr,
+                proposal_type: proposalType,
+                initial_deposit: [
+                    {
+                        amount: String(amount),
+                        denom,
+                    },
+                ],
+            },
+        });
+
+        if (!tx.value) {
+            throw new Error('tx value was not set or invalid');
+        }
+
+        return this.buildSignBroadcastTx(tx, txInfo);
+    }
+
+    /**
+     * Deposit tokens to a proposal with account
+     *
+     * @param {Account} depositor
+     * @param params {{proposalId: string, amount: number, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async depositToProposalWithAccount ({depositor, ...params}) {
+        if (!depositor) {
+            throw new Error('depositor object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(depositor.getAddress());
+        depositor.updateInfo(value);
+
+        return this.depositToProposal({
+            ...params,
+            depositorAddr: depositor.getAddress(),
+            privateKey: depositor.getPrivateKey(),
+            publicKey: depositor.getPublicKeyEncoded(),
+            accountNumber: depositor.getAccountNumber(),
+            sequence: depositor.getSequence(),
+        });
+    }
+
+    /**
+     * Deposit tokens to a proposal
+     *
+     * @param {string} depositorAddr
+     * @param {string} proposalId
+     * @param {number} amount
+     * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async depositToProposal ({
+                                 depositorAddr,
+                                 proposalId,
+                                 amount = 0,
+                                 ...txInfo
+                             }) {
+        if (!proposalId) {
+            throw new Error('proposalId object was not set or invalid');
+        }
+        if (!depositorAddr) {
+            throw new Error('depositorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgDeposit.type,
+            proposalId,
+            depositorAddr,
+            amount,
+            denom: DEFAULT_DENOM,
+        }, txInfo);
+    }
+
+    /**
+     * Vote a proposal with account
+     *
+     * @param {Account} voter
+     * @param params {{proposalId: string, option: string, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async voteProposalWithAccount ({voter, ...params}) {
+        if (!voter) {
+            throw new Error('voter object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(voter.getAddress());
+        voter.updateInfo(value);
+
+        return this.voteProposal({
+            ...params,
+            voterAddr: voter.getAddress(),
+            privateKey: voter.getPrivateKey(),
+            publicKey: voter.getPublicKeyEncoded(),
+            accountNumber: voter.getAccountNumber(),
+            sequence: voter.getSequence(),
+        });
+    }
+
+    /**
+     * Vote a proposal
+     *
+     * @param {string} voterAddr
+     * @param {string} proposalId
+     * @param {string} option
+     * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async voteProposal ({
+                            voterAddr,
+                            proposalId,
+                            option = 'No',
+                            ...txInfo
+                        }) {
+        if (!voterAddr) {
+            throw new Error('voterAddr object was not set or invalid');
+        }
+
+        const tx = await post(this.apiUrl, {
+            path: `/gov/proposals/${proposalId}/votes`,
+            data: {
+                ...this.buildBaseReq({
+                    chainId: this.chainId,
+                    from: voterAddr,
+                    ...txInfo,
+                }),
+                proposal_id: proposalId,
+                voter: voterAddr,
+                option,
+            },
+        });
+
+        if (!tx.value) {
+            throw new Error('tx value was not set or invalid');
+        }
+
+        return this.buildSignBroadcastTx(tx, txInfo);
     }
 
     // --------------- ws ------------------

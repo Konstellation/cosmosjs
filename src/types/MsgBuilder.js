@@ -2,8 +2,9 @@ import MsgSend from './msgtypes/MsgSend';
 import MsgDelegate from './msgtypes/MsgDelegate';
 import MsgBeginRedelegate from './msgtypes/MsgBeginRedelegate';
 import MsgUndelegate from './msgtypes/MsgUndelegate';
+import MsgDeposit from './msgtypes/MsgDeposit';
 import MsgWithdrawDelegationReward from './msgtypes/MsgWithdrawDelegationReward';
-import MsgWithdrawDelegationRewardsAll from './msgtypes/MsgWithdrawDelegationRewardsAll';
+import MsgUnjail from './msgtypes/MsgUnjail';
 
 export default class MsgBuilder {
     constructor () {
@@ -20,7 +21,8 @@ export default class MsgBuilder {
         this.addMsgType(MsgBeginRedelegate);
         this.addMsgType(MsgUndelegate);
         this.addMsgType(MsgWithdrawDelegationReward);
-        this.addMsgType(MsgWithdrawDelegationRewardsAll);
+        this.addMsgType(MsgUnjail);
+        this.addMsgType(MsgDeposit);
 
         return this;
     }

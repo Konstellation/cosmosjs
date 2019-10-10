@@ -1,7 +1,7 @@
 import StdTx from './StdTx';
 import StdSignMsg from './StdSignMsg';
-import sign64 from '../crypto/sign64';
-import {DEFAULT_DENOM, DEFAULT_FEE, DEFAULT_GAS} from '../constants';
+import sign64 from '../utils/crypto/sign64';
+import {DEFAULT_DENOM, DEFAULT_FEE, DEFAULT_GAS} from '../utils/constants';
 import BaseReq from './BaseReq';
 
 export default class TxBuilder {

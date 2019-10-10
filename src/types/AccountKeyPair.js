@@ -13,7 +13,7 @@ import crypto from 'crypto';
 import {
     DEFAULT_BECH32_PREFIX,
     DEFAULT_KEY_PATH,
-} from '../constants';
+} from '../utils/constants';
 
 export default class AccountKeyPair {
     constructor (bech32MainPrefix, path) {

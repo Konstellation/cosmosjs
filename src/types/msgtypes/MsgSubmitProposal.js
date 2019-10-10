@@ -1,8 +1,8 @@
-const MsgType = require('../Msg');
+import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgSubmitProposal';
 
-function builder({description, initialDepositAmount, initialDepositDenom, proposal_type, proposer, title}) {
+function builder ({description, initialDepositAmount, initialDepositDenom, proposal_type, proposer, title}) {
     return [
         {
             type,
@@ -11,18 +11,18 @@ function builder({description, initialDepositAmount, initialDepositDenom, propos
                 initial_deposit: [
                     {
                         amount: String(initialDepositAmount),
-                        denom: initialDepositDenom
-                    }
+                        denom: initialDepositDenom,
+                    },
                 ],
                 proposal_type,
                 proposer,
-                title
-            }
-        }
+                title,
+            },
+        },
     ];
 }
 
-module.exports = new Msg({
+export default new Msg({
     type,
-    builder
+    builder,
 });

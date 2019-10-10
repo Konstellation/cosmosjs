@@ -1,13 +1,13 @@
 import Msg from '../Msg';
 
-const type = 'cosmos-sdk/MsgWithdrawDelegationRewardsAll';
+const type = 'cosmos-sdk/MsgUnjail';
 
-function builder ({delegatorAddr}) {
+function builder ({validatorAddr: address}) {
     return [
         {
             type,
             value: {
-                delegator_address: delegatorAddr,
+                address,
             },
         },
     ];
