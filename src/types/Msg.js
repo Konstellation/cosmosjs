@@ -4,6 +4,12 @@ export default class Msg {
         this.builder = builder;
     }
 
+    /**
+     * Build msg with input data
+     *
+     * @param {object} input
+     * @returns {*}
+     */
     build (input) {
         return this.builder(input);
     }

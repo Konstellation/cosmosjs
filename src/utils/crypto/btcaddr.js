@@ -2,7 +2,7 @@ import Sha256 from 'sha256';
 import RIPEMD160 from 'ripemd160';
 
 /**
- * Convert publickey into bitcoin address
+ * Convert public key into bitcoin address
  *
  * @param {Buffer} publicKey
  * @returns {Buffer}

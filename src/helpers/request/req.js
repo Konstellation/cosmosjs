@@ -1,5 +1,15 @@
 import {GET, POST} from './methods';
 
+/**
+ * Make raw request
+ * @param {string} url
+ * @param {string} method
+ * @param {string} path
+ * @param {object} query
+ * @param {object} data
+ * @param {boolean} log
+ * @returns {Promise<any>}
+ */
 export default function req (url, {method, path, query, data} = {}, log = false) {
     url = new URL(`${url}${path || ''}`);
     query && Object.keys(query).forEach((param) => {

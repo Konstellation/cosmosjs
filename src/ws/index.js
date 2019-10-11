@@ -1,4 +1,9 @@
 export default class Socket {
+    /**
+     * Create socket
+     *
+     * @param {string} nodeUrl
+     */
     constructor (nodeUrl) {
         const {host} = new URL(nodeUrl);
 
@@ -7,7 +12,12 @@ export default class Socket {
         this.socket = new WebSocket(`ws://${host}/websocket`);
     }
 
-
+    /**
+     * Subscribe on event
+     *
+     * @param {string} query
+     * @param {function} handler
+     */
     subscribe (query, handler) {
         if (!query) {
             throw new Error('query was not set or invalid');
@@ -19,6 +29,9 @@ export default class Socket {
         this.events[query] = handler;
     }
 
+    /**
+     * Establish connection with node
+     */
     connect () {
         this.socket.onopen = () => {
             console.log('[open] Connection established');
@@ -54,6 +67,13 @@ export default class Socket {
         };
     }
 
+    /**
+     * Encode request to JSON-RPC
+     *
+     * @param {string} method
+     * @param {object} query
+     * @returns {string}
+     */
     toJsonRPC (method, query) {
         const params = query ? {query} : {};
 

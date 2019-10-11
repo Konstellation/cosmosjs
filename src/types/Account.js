@@ -57,10 +57,21 @@ export default class Account {
         return this.keyPair.getPublicKeyEncoded();
     }
 
+
+    /**
+     *
+     * @returns {*}
+     */
     getMnemonic () {
         return this.keyPair.getMnemonic();
     }
 
+    /**
+     *
+     * @param {string} account_number
+     * @param {string} sequence
+     * @returns {Account}
+     */
     updateInfo ({account_number, sequence}) {
         this.sequence = sequence;
         this.accountNumber = account_number;
@@ -68,10 +79,18 @@ export default class Account {
         return this;
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     getSequence () {
         return this.sequence;
     }
 
+    /**
+     *
+     * @returns {string}
+     */
     getAccountNumber () {
         return this.accountNumber;
     }

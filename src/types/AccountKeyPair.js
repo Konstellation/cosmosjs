@@ -3,20 +3,32 @@ import bip32 from 'bip32';
 import bech32 from 'bech32';
 import secp256k1 from 'secp256k1';
 import {ECPair} from 'bitcoinjs-lib';
-
+import KeyStoreV3 from '../utils/crypto/keystore';
+import btcaddr from "../utils/crypto/btcaddr";
 import {
     DEFAULT_BECH32_PREFIX,
     DEFAULT_KEY_PATH,
 } from '../utils/constants';
-import KeyStoreV3 from '../utils/crypto/keystore';
-import btcaddr from "../utils/crypto/btcaddr";
 
 export default class AccountKeyPair {
+    /**
+     * Creates key pair
+     *
+     * @param bech32MainPrefix
+     * @param path
+     */
     constructor (bech32MainPrefix, path) {
         this.path = path || DEFAULT_KEY_PATH;
         this.bech32MainPrefix = bech32MainPrefix || DEFAULT_BECH32_PREFIX;
     }
 
+    /**
+     * Check address validity
+     *
+     * @param {string} address
+     * @param {string} prefix
+     * @returns {boolean}
+     */
     static isValidAddress (address, prefix = DEFAULT_BECH32_PREFIX) {
         const preReg = new RegExp(`^${prefix}1`);
         if (!preReg.test(address)) {
@@ -36,10 +48,19 @@ export default class AccountKeyPair {
         }
     }
 
+    /**
+     * Check private key validity
+     *
+     * @param {string} privateKey
+     * @returns {boolean}
+     */
     static isValidPrivate (privateKey) {
         return /^[0-9a-fA-F]{64}$/i.test(privateKey);
     }
 
+    /**
+     * Generate key pair
+     */
     generate () {
         this.mnemonic = bip39.generateMnemonic(256);
         const seed = bip39.mnemonicToSeed(this.mnemonic);
@@ -48,6 +69,11 @@ export default class AccountKeyPair {
         this.privateKey = child.privateKey;
     }
 
+    /**
+     * Recover key pair from mnemonic words
+     *
+     * @param {string} mnemonic
+     */
     recover (mnemonic) {
         this.checkSeed(mnemonic);
 
@@ -58,14 +84,29 @@ export default class AccountKeyPair {
         this.privateKey = child.privateKey;
     }
 
+    /**
+     * Set private key
+     *
+     * @param {Buffer} privateKey
+     */
     import (privateKey) {
         this.privateKey = privateKey;
     }
 
+    /**
+     * Get mnemonic if defined
+     *
+     * @returns {string | *}
+     */
     getMnemonic () {
         return this.mnemonic;
     }
 
+    /**
+     * Resolve address
+     *
+     * @returns string
+     */
     getAddress () {
         let publicKey = this.getPublicKey();
         if (publicKey.length > 33) {
@@ -75,30 +116,59 @@ export default class AccountKeyPair {
         return bech32.encode(this.bech32MainPrefix, bech32.toWords(btcaddr(publicKey)));
     }
 
+    /**
+     * Calc public key from private key
+     *
+     * @returns {ECPair}
+     */
     getECPair () {
         return ECPair.fromPrivateKey(this.privateKey, {
             compressed: false,
         });
     }
 
+    /**
+     * Get private key in bytes
+     *
+     * @returns {Buffer}
+     */
     getPrivateKey () {
         return this.privateKey;
     }
 
+    /**
+     * Get private key encoded into base64
+     * @returns {string}
+     */
     getPrivateKeyEncoded () {
         return Buffer.from(this.getPrivateKey(), 'binary')
             .toString('base64');
     }
 
+    /**
+     * Get public key encoded into base64
+     *
+     * @returns {string}
+     */
     getPublicKeyEncoded () {
         return Buffer.from(this.getPublicKey(), 'binary')
             .toString('base64');
     }
 
+    /**
+     * Get public key in bytes
+     *
+     * @returns {Buffer}
+     */
     getPublicKey () {
         return secp256k1.publicKeyCreate(this.getPrivateKey());
     }
 
+    /**
+     * Export account key pair to json
+     *
+     * @returns {{privateKey, address, mnemonic: string | *, publicKey}}
+     */
     toJSON () {
         return {
             mnemonic: this.mnemonic,
@@ -108,6 +178,11 @@ export default class AccountKeyPair {
         };
     }
 
+    /**
+     * Checks mnemonic
+     *
+     * @param {string} mnemonic
+     */
     checkSeed (mnemonic) {
         const seed = mnemonic.split(' ');
         if (seed.length !== 12 && seed.length !== 24) {
@@ -118,14 +193,30 @@ export default class AccountKeyPair {
         }
     }
 
+    /**
+     * Check address validity
+     *
+     * @returns {boolean}
+     */
     isValidAddress () {
         return AccountKeyPair.isValidAddress(this.getAddress(), this.bech32MainPrefix);
     }
 
+    /**
+     * Check private key validity
+     *
+     * @returns {boolean}
+     */
     isValidPrivate () {
         return AccountKeyPair.isValidPrivate(this.getPrivateKeyEncoded());
     }
 
+    /**
+     * Export key pair to v3 key store
+     *
+     * @param {string} password
+     * @returns {{id: string, version: number, address: string, crypto: Object}}
+     */
     toV3KeyStore (password) {
         if (!password) {
             throw new Error('No password given.');
@@ -134,6 +225,12 @@ export default class AccountKeyPair {
         return new KeyStoreV3().export(this.getPrivateKey(), password, this.getAddress());
     }
 
+    /**
+     * Import key pair from v3 key store
+     * @param {object} v3Keystore
+     * @param {string} password
+     * @param {boolean} nonStrict
+     */
     fromV3KeyStore (v3Keystore, password, nonStrict) {
         if (!password) {
             throw new Error('No password given.');

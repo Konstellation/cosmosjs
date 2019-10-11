@@ -20,8 +20,10 @@ export const AES128CTR = 'aes-128-ctr';
 
 class KDF {
     /**
+     * Creates key derivation function
+     *
      * @param {Buffer|string} salt
-     * @param dklen
+     * @param {number} dklen
      */
     constructor ({salt, dklen = DKLEN}) {
         if (typeof salt === 'string') {
@@ -32,10 +34,16 @@ class KDF {
         this.dklen = dklen;
     }
 
+    /**
+     * Derive key
+     */
     getDerivedKey () {
         throw new Error('Not implemented');
     }
 
+    /**
+     * Get kdf params
+     */
     getKdfParams () {
         throw new Error('Not implemented');
     }
@@ -43,11 +51,12 @@ class KDF {
 
 class ScryptKdf extends KDF {
     /**
+     * Creates key derivation function based on scrypt
      *
-     * @param n
-     * @param r
-     * @param p
-     * @param dklen
+     * @param {number} n
+     * @param {number} r
+     * @param {number} p
+     * @param {number} dklen
      * @param {Buffer|string} salt
      */
     constructor ({n = SCRYPT_N, r = SCRYPT_R, p = SCRYPT_P, dklen, salt}) {
@@ -60,8 +69,10 @@ class ScryptKdf extends KDF {
     }
 
     /**
+     * Derive key
      *
-     * @param password
+     * @param {string} password
+     * @returns {Buffer}
      */
     getDerivedKey (password) {
         return scryptsy(
@@ -75,6 +86,7 @@ class ScryptKdf extends KDF {
     }
 
     /**
+     * Get kdf params
      *
      * @returns {{p: number, r: number, salt: string, dklen: number, n: number}}
      */
@@ -91,12 +103,13 @@ class ScryptKdf extends KDF {
 
 class Pbkdf2Kdf extends KDF {
     /**
+     * Creates key derivation function based on pbkdf2
      *
      * @param {string} prf
      * @param {number} c
      * @param {number} dklen
      * @param {string} digest
-     * @param cc
+     * @param {Buffer|string} salt
      */
     constructor ({prf = PRF, c = PBKDF2_C, dklen = DKLEN, digest = SHA256, salt}) {
         super({dklen, salt});
@@ -108,6 +121,7 @@ class Pbkdf2Kdf extends KDF {
     }
 
     /**
+     * Derive key
      *
      * @param {string} password
      * @returns {Buffer}
@@ -127,6 +141,7 @@ class Pbkdf2Kdf extends KDF {
     }
 
     /**
+     * Get kdf params
      *
      * @returns {{salt: string, c: number, prf: string, dklen: number}}
      */
@@ -142,6 +157,14 @@ class Pbkdf2Kdf extends KDF {
 
 
 export default class KeyStoreV3 {
+    /**
+     * Import keystore
+     *
+     * @param {object|string} v3Keystore
+     * @param {string} password
+     * @param {boolean} nonStrict
+     * @returns {Buffer} privateKey
+     */
     import (v3Keystore, password, nonStrict) {
         nonStrict = nonStrict || false;
         if (!password) {
@@ -169,7 +192,7 @@ export default class KeyStoreV3 {
      * @param {number} dklen
      * @param {Buffer} salt
      * @param {Buffer} iv
-     * @returns {{id: *, version: *}}
+     * @returns {{id: string, version: number, address:string, crypto:object}}
      */
     export (privateKey, password, address, {cipher = AES128CTR, kdf = SCRYPT, dklen = DKLEN, salt, iv} = {}) {
         if (!password) {
