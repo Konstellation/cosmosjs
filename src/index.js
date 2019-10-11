@@ -17,6 +17,8 @@ import MsgBeginRedelegate from './types/msgtypes/MsgBeginRedelegate';
 import MsgUndelegate from './types/msgtypes/MsgUndelegate';
 import MsgUnjail from './types/msgtypes/MsgUnjail';
 import MsgDeposit from './types/msgtypes/MsgDeposit';
+import MsgVote from "./types/msgtypes/MsgVote";
+import MsgWithdrawDelegationReward from './types/msgtypes/MsgWithdrawDelegationReward';
 
 import Socket from './ws';
 
@@ -973,7 +975,7 @@ class Chain {
     }
 
     /**
-     * Withdraw a delegation reward with account
+     * Withdraw a delegation reward
      *
      * @param {Account} delegator
      * @param params {{delegator: Account, validatorAddr: string}}
@@ -1013,26 +1015,15 @@ class Chain {
             throw new Error('validatorAddr object was not set or invalid');
         }
 
-        const tx = await post(this.apiUrl, {
-            path: `/distribution/delegators/${delegatorAddr}/rewards/${validatorAddr}`,
-            data: {
-                ...this.buildBaseReq({
-                    chainId: this.chainId,
-                    from: delegatorAddr,
-                    ...txInfo,
-                }),
-            },
-        });
-
-        if (!tx.value) {
-            throw new Error('tx value was not set or invalid');
-        }
-
-        return this.buildSignBroadcastTx(tx, txInfo);
+        return this.buildSignBroadcast({
+            type: MsgWithdrawDelegationReward.type,
+            delegatorAddr,
+            validatorAddr,
+        }, txInfo);
     }
 
     /**
-     * Withdraw all the delegator's delegation rewards with account
+     * Withdraw all the delegator's delegation rewards
      *
      * @param {Account} delegator
      * @param params
@@ -1583,25 +1574,12 @@ class Chain {
             throw new Error('voterAddr object was not set or invalid');
         }
 
-        const tx = await post(this.apiUrl, {
-            path: `/gov/proposals/${proposalId}/votes`,
-            data: {
-                ...this.buildBaseReq({
-                    chainId: this.chainId,
-                    from: voterAddr,
-                    ...txInfo,
-                }),
-                proposal_id: proposalId,
-                voter: voterAddr,
-                option,
-            },
-        });
-
-        if (!tx.value) {
-            throw new Error('tx value was not set or invalid');
-        }
-
-        return this.buildSignBroadcastTx(tx, txInfo);
+        return this.buildSignBroadcast({
+            type: MsgVote.type,
+            proposalId,
+            voterAddr,
+            option,
+        }, txInfo);
     }
 
     // --------------- ws ------------------

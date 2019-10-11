@@ -204,6 +204,29 @@ const req = await chain.request('/txs', {
 });
 ```
 
+
+                // console.log(await chain.fetchSupplyTotal());
+                // console.log(await chain.fetchSupplyDenom('adarc'));
+                // console.log(await chain.fetchDistributionCommunityPool());
+                // console.log(await chain.fetchDistributionParameters());
+                // console.log(await chain.fetchStakingPool());
+                // console.log(await chain.fetchStakingParameters());
+                // console.log(await chain.fetchSlashingSigningInfos());
+                // console.log(await chain.fetchSlashingParameters());
+                // console.log(await chain.fetchGovDepositParameters());
+                // console.log(await chain.fetchGovTallyingParameters());
+                // console.log(await chain.fetchGovVotingParameters());
+                
+                
+            this.$store.dispatch('gov/fetchDepositParams');
+            this.$store.dispatch('gov/fetchProposal', this.$route.params.id);
+            this.$store.dispatch('gov/fetchProposalTally', this.$route.params.id);
+            this.$store.dispatch('gov/fetchProposalVote', this.$route.params.id);
+            this.$store.dispatch('gov/fetchProposalVotes', this.$route.params.id);
+            this.$store.dispatch('gov/fetchProposalProposer', this.$route.params.id);
+            this.$store.dispatch('gov/fetchProposalDeposit', this.$route.params.id);
+            this.$store.dispatch('gov/fetchProposalDeposits', this.$route.params.id);
+
 #### Supporting Message Types (Updating...)
 
 - cosmos-sdk/MsgSend
