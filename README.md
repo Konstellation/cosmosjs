@@ -82,7 +82,8 @@ const account = chain.importAccountFromV3KeyStore(key, pass);
 ```
 
 ### Export Cosmos account to keystore
-```jsconst ks = chain.exportAccountToV3KeyStore(account, pass);
+```js
+const ks = chain.exportAccountToV3KeyStore(account, pass);
 ```
 
 ### Get address

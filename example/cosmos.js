@@ -2,16 +2,13 @@ const sdk = require("../src");
 
 async function _() {
     const chain = sdk.network({
-        url: "http://127.0.0.1:1317",
+        apiUrl: 'http://localhost:1317',
+        nodeUrl: 'http://localhost:26657',
+        chainId: 'darchub',
     });
 
-    const nodeInfo = await chain.fetchNodeInfo();
-    chain.updateConfig(nodeInfo);
-    console.log(chain);
-
-    // const i = await chain.test();
-    // console.log(i);
-    //
+    const {node_info} = await chain.fetchNodeInfo();
+    console.log(node_info);
 
     const mnemonic = "idle practice stadium maple cake traffic input zoo inherit tip mixture upgrade squirrel photo cabbage result limb consider foam tank sad improve grass wolf";
     const account = chain.recoverAccount(mnemonic);
