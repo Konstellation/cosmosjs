@@ -1,8 +1,8 @@
-import Msg from '../Msg';
+import Msg from '../../../types/Msg';
 
-const type = 'cosmos-sdk/MsgDeposit';
+const type = 'cosmos-sdk/MsgSend';
 
-function builder ({amount: {amount, denom}, depositorAddr, proposalId}) {
+function builder ({from, to, amount: {amount, denom}}) {
     return [
         {
             type,
@@ -10,11 +10,11 @@ function builder ({amount: {amount, denom}, depositorAddr, proposalId}) {
                 amount: [
                     {
                         amount: String(amount),
-                        denom,
+                        denom: String(denom),
                     },
                 ],
-                depositor: depositorAddr,
-                proposal_id: String(proposalId),
+                from_address: String(from),
+                to_address: String(to),
             },
         },
     ];

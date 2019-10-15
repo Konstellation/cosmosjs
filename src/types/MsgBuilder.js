@@ -6,6 +6,7 @@ import MsgDeposit from './msgtypes/MsgDeposit';
 import MsgWithdrawDelegationReward from './msgtypes/MsgWithdrawDelegationReward';
 import MsgUnjail from './msgtypes/MsgUnjail';
 
+
 export default class MsgBuilder {
     constructor () {
         this.msgTypes = {};
@@ -18,6 +19,7 @@ export default class MsgBuilder {
      */
     addMsgType (msgType) {
         this.msgTypes[msgType.type] = msgType;
+        // msgs.forEach(msg => console.log(msg.type));
     }
 
     /**

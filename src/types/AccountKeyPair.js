@@ -8,18 +8,18 @@ import btcaddr from "../utils/crypto/btcaddr";
 import {
     DEFAULT_BECH32_PREFIX,
     DEFAULT_KEY_PATH,
-} from '../utils/constants';
+} from '../constants';
 
 export default class AccountKeyPair {
     /**
      * Creates key pair
      *
-     * @param bech32MainPrefix
-     * @param path
+     * @param {string} bech32MainPrefix
+     * @param {string} path
      */
-    constructor (bech32MainPrefix, path) {
-        this.path = path || DEFAULT_KEY_PATH;
-        this.bech32MainPrefix = bech32MainPrefix || DEFAULT_BECH32_PREFIX;
+    constructor (bech32MainPrefix = DEFAULT_BECH32_PREFIX, path = DEFAULT_KEY_PATH) {
+        this.path = path;
+        this.bech32MainPrefix = bech32MainPrefix;
     }
 
     /**
@@ -96,7 +96,7 @@ export default class AccountKeyPair {
     /**
      * Get mnemonic if defined
      *
-     * @returns {string | *}
+     * @returns {string|*}
      */
     getMnemonic () {
         return this.mnemonic;
@@ -229,13 +229,12 @@ export default class AccountKeyPair {
      * Import key pair from v3 key store
      * @param {object} v3Keystore
      * @param {string} password
-     * @param {boolean} nonStrict
      */
-    fromV3KeyStore (v3Keystore, password, nonStrict) {
+    fromV3KeyStore (v3Keystore, password) {
         if (!password) {
             throw new Error('No password given.');
         }
 
-        return this.import(new KeyStoreV3().import(v3Keystore, password, nonStrict));
+        return this.import(new KeyStoreV3().import(v3Keystore, password));
     }
 }

@@ -7,9 +7,10 @@ import post from './helpers/request/post';
 import req from './helpers/request/req';
 
 import {
-    DEFAULT_BECH32_PREFIX, DEFAULT_DENOM,
+    DEFAULT_BECH32_PREFIX,
+    DEFAULT_DENOM,
     DEFAULT_KEY_PATH,
-} from './utils/constants';
+} from './constants';
 
 import MsgSend from './types/msgtypes/MsgSend';
 import MsgDelegate from './types/msgtypes/MsgDelegate';
@@ -17,19 +18,29 @@ import MsgBeginRedelegate from './types/msgtypes/MsgBeginRedelegate';
 import MsgUndelegate from './types/msgtypes/MsgUndelegate';
 import MsgUnjail from './types/msgtypes/MsgUnjail';
 import MsgDeposit from './types/msgtypes/MsgDeposit';
-import MsgVote from "./types/msgtypes/MsgVote";
+import MsgVote from './types/msgtypes/MsgVote';
 import MsgWithdrawDelegationReward from './types/msgtypes/MsgWithdrawDelegationReward';
 
 import Socket from './ws';
 
 class Chain {
-    constructor ({
-                     apiUrl,
-                     nodeUrl,
-                     chainId,
-                     bech32MainPrefix = DEFAULT_BECH32_PREFIX,
-                     path = DEFAULT_KEY_PATH,
-                 }) {
+    /**
+     *
+     * @param apiUrl
+     * @param nodeUrl
+     * @param chainId
+     * @param bech32MainPrefix
+     * @param path
+     */
+    constructor (
+        {
+            apiUrl,
+            nodeUrl,
+            chainId,
+            bech32MainPrefix = DEFAULT_BECH32_PREFIX,
+            path = DEFAULT_KEY_PATH,
+        },
+    ) {
         this.apiUrl = apiUrl;
         this.nodeUrl = nodeUrl;
         this.chainId = chainId;
@@ -53,6 +64,8 @@ class Chain {
         this.txBuilder = new TxBuilder();
 
         this.socket = new Socket(this.nodeUrl);
+
+        // Object.entries(api).forEach(([name, func]) => Chain.prototype[name] = func);
     }
 
     /**
@@ -361,11 +374,7 @@ class Chain {
      * @param params
      * @returns {Promise<*>}
      */
-    fetchTransactions ({action, ...params}) {
-        if (!action) {
-            action = 'send';
-        }
-
+    fetchTransactions ({action = 'send', ...params}) {
         return get(this.apiUrl, {
             path: '/txs',
             query: {
@@ -598,7 +607,7 @@ class Chain {
      * @param params {{ page: number, limit: number }}
      * @returns {Promise<*>}
      */
-    fetchValidators ({status, ...params} = {}) {
+    fetchValidators (status, params = {}) {
         return get(this.apiUrl, {
             path: '/staking/validators',
             query: {
@@ -1150,7 +1159,7 @@ class Chain {
      * @param {string} validatorAddr Bech32 validator address
      * @param params
      */
-    async fetchUnjailValidatorWithAccount ({validatorAddr, validator, ...params}) {
+    async unjailValidatorWithAccount ({validatorAddr, validator, ...params}) {
         if (!validator) {
             throw new Error('validator object was not set or invalid');
         }
@@ -1158,7 +1167,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(validator.getAddress());
         validator.updateInfo(value);
 
-        return this.fetchUnjailValidator({
+        return this.unjailValidator({
             ...params,
             validatorAddr,
             from: validator.getAddress(),
@@ -1175,7 +1184,7 @@ class Chain {
      * @param {string} validatorAddr Bech32 validator address
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      */
-    fetchUnjailValidator ({validatorAddr, ...txInfo}) {
+    unjailValidator ({validatorAddr, ...txInfo}) {
         if (!validatorAddr) {
             throw new Error('validatorAddr object was not set or invalid');
         }

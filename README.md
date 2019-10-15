@@ -50,23 +50,24 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 ### Init network
 ```js
 const chain = sdk.network({
-    url: "http://127.0.0.1:1317",
+    apiUrl: 'http://localhost:1317',
+    nodeUrl: 'http://localhost:26657',
+    chainId: 'darchub',
 });
-```
-
-### Fetch node info
-```js
-const nodeInfo = chain.fetchNodeInfo()
-```
-
-### Config chain to perform transactions
-```js
-chain.updateConfig(nodeInfo);
 ```
 
 ### Generate Cosmos account
 ```js
-let account = chain.generateAccount();
+const account = chain.generateAccount();
+```
+
+### Import account from keystore or menmonic
+```js
+const account = chain.importAccount({keystore, pass});
+```
+or
+```js
+const account = chain.importAccount({mnemonic});
 ```
 
 ### Recover Cosmos account from mnemonic
@@ -75,20 +76,43 @@ const mnemonic = "...";
 const account = chain.recoverAccount(mnemonic);
 ```
 
+### Import Cosmos account from keystore
+```js
+const account = chain.importAccountFromV3KeyStore(key, pass);
+```
+
+### Export Cosmos account to keystore
+```jsconst ks = chain.exportAccountToV3KeyStore(account, pass);
+```
+
 ### Get address
 ```js
 const address = account.getAddress();
 ```
 
-### Fetch balance of account by address
+### Fetch node info
 ```js
-const balance = await chain.fetchBalance(address);
+const { node_info } = await chain.fetchNodeInfo();
+```
+
+### Fetch blockchain info
+```js
+const { result } = await chain.fetchBlockchainInfo({
+    minHeight,
+    maxHeight,
+    random: new Date().getTime(),
+});
 ```
 
 ### Fetch account info by address
 ```js
 const {result: {value}} = await chain.fetchAccount(address);
 account.updateInfo(value);
+```
+
+### Fetch balance of account by address
+```js
+const balance = await chain.fetchAccountBalance(address);
 ```
 
 ### Transfer DARC to destination address. 
@@ -98,20 +122,17 @@ account.updateInfo(value);
 Make sure to input proper type, account number, and sequence of the cosmos account to generate StdSignMsg. You can get those account information on blockchain 
 ```js
 const msg = chain.buildMsg({
-    type: "cosmos-sdk/MsgSend",
-    from_address: account.getAddress(),
-    to_address: "...",
-    denom: "darc",
-    amount: 100,	
+    type: MsgSend.type,
+    from: account.getAddress(),
+    to: "...",
+    amount: {amount, denom},	
 });
 ```
 
 ##### Build transaction
 ```js
 const signMsg = chain.buildSignMsg(msg, {
-    chainId: 'darchub',
-    feeDenom: "darc",
-    fee: 5000,
+    fee: {amount, denom},
     gas: 200000,
     memo: "",
     accountNumber: account.getAccountNumber(),
@@ -128,9 +149,27 @@ or
 const stdTx = chain.sign(signMsg, account.getPrivateKey(), account.getPublicKey());
 ```
 
-##### Broadcast transaction 
+### Broadcast transaction
 ```js
 const broadcastInfo = await chain.broadcastTx(stdTx, 'sync');
+```
+
+##### All in one  
+```js
+const broadcastInfo = await chain.buildSignBroadcast({
+    type: MsgSend.type,
+    from: account.getAddress(),
+    to: '...',
+    amount: {amount, denom},
+}, {
+    gas,
+    memo,
+    fee,
+    accountNumber: account.getAccountNumber(),
+    sequence: account.getSequence(),
+    privateKey: account.getPrivateKey(),
+    publicKey: account.getPublicKey(),
+})
 ```
 
 #### - Transfer method
@@ -141,17 +180,23 @@ const res = await chain.transfer({
     sequence: account.getSequence(),
     privateKey: account.getPrivateKey(),
     publicKey: account.getPublicKey(),
-    to: "...",
-    amount: 300,
+    to: address,
+    amount: {amount, denom},
+    memo,
+    fee: {amount, denom},
+    gas,
 });
 ```
 
 #### - TransferFromAccount method
 ```js
-const res = await chain.transferFromAccount({
+const res = await chain.transferWithAccount({
     from: account,
-    to: '...',
-    amount: 200
+    to: address,
+    amount: {amount, denom},
+    memo,
+    fee: {amount, denom},
+    gas
 });
 ```
 
@@ -186,14 +231,54 @@ Genesis transactions are returned if the height parameter is set to zero, otherw
 const txs = await chain.searchTransactions({height: 0});
 ```
 
-### Fetch the total supply of coins
+### Delegate tokens to the validator
 ```js
-const coinsInfo = await chain.fetchTotalSupply();
+const res = await chain.delegateWithAccount({
+    delegator,
+    validatorAddr,
+    amount: {amount: denom},
+})
 ```
 
-### Fetch the supply of a single denom
+### Redelegate tokens to the new validator
 ```js
-const coinsInfo = await chain.fetchSupplyDenom('darc');
+const res = await chain.redelegateWithAccount({
+    delegator,
+    validatorDstAddr,
+    validatorSrcAddr,
+    amount: {amount: denom},
+})
+```
+
+### Undelegate tokens from the validator
+```js
+const res = await chain.undelegateWithAccount({
+    delegator,
+    validatorAddr,
+    amount: {amount: denom},
+})
+```
+
+### Withdraw delegation rewards from the validator
+```js
+const res = await chain.withdrawDelegationRewardWithAccount({
+    delegator,
+    validatorAddr,
+})
+```
+
+### Withdraw all delegation rewards from all delegations
+```js
+const res = await chain.withdrawDelegationRewardsWithAccount({
+    delegator,
+})
+```
+
+### Unjail validator
+```js
+const res = await chain.unjailValidatorWithAccount({
+    validator,
+})
 ```
 
 ### Perform custom request
@@ -204,39 +289,89 @@ const req = await chain.request('/txs', {
 });
 ```
 
-
-                // console.log(await chain.fetchSupplyTotal());
-                // console.log(await chain.fetchSupplyDenom('adarc'));
-                // console.log(await chain.fetchDistributionCommunityPool());
-                // console.log(await chain.fetchDistributionParameters());
-                // console.log(await chain.fetchStakingPool());
-                // console.log(await chain.fetchStakingParameters());
-                // console.log(await chain.fetchSlashingSigningInfos());
-                // console.log(await chain.fetchSlashingParameters());
-                // console.log(await chain.fetchGovDepositParameters());
-                // console.log(await chain.fetchGovTallyingParameters());
-                // console.log(await chain.fetchGovVotingParameters());
-                
-                
-            this.$store.dispatch('gov/fetchDepositParams');
-            this.$store.dispatch('gov/fetchProposal', this.$route.params.id);
-            this.$store.dispatch('gov/fetchProposalTally', this.$route.params.id);
-            this.$store.dispatch('gov/fetchProposalVote', this.$route.params.id);
-            this.$store.dispatch('gov/fetchProposalVotes', this.$route.params.id);
-            this.$store.dispatch('gov/fetchProposalProposer', this.$route.params.id);
-            this.$store.dispatch('gov/fetchProposalDeposit', this.$route.params.id);
-            this.$store.dispatch('gov/fetchProposalDeposits', this.$route.params.id);
+#### This package also supports all available functions of LCD REST-SERVER 
 
 #### Supporting Message Types (Updating...)
 
 - cosmos-sdk/MsgSend
 ```js
 const stdSignMsg = chain.buildMsg({
-    type: "cosmos-sdk/MsgSend",
-    from_address: address,
-    to_address: "...",
-    denom: "darc",
-    amount: 5000,
+    type: MsgSend.type,
+    from: address,
+    to: "...",
+    amount: {amount, denom},
+});
+```
+- cosmos-sdk/MsgDelegate
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgDelegate.type,
+    delegatorAddr,
+    validatorAddr,
+    amount: {amount, denom},
+});
+```
+- cosmos-sdk/MsgBeginRedelegate
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgBeginRedelegate.type,
+    delegatorAddr,
+    validatorDstAddr,
+    validatorSrcAddr,
+    amount: {amount, denom},
+});
+```
+- cosmos-sdk/MsgUndelegate
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgUndelegate.type,
+    amount: {amount, denom},
+    delegatorAddr,
+    validatorAddr,
+});
+```
+- cosmos-sdk/MsgWithdrawDelegationReward
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgWithdrawDelegationReward.type,
+    delegatorAddr,
+    validatorAddr,
+});
+```
+- cosmos-sdk/MsgUnjail
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgUnjail.type,
+    validatorAddr,
+});
+```
+- cosmos-sdk/MsgSubmitProposal
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgSubmitProposal.type,
+    proposal_type: 'TextProposal',
+    initialDeposit: {amount, denom},
+    description,
+    proposer,
+    title,
+});
+```
+- cosmos-sdk/MsgDeposit
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgDeposit.type,
+    proposalId,
+    depositorAddr,
+    amount: {amount, denom},
+});
+```
+- cosmos-sdk/MsgVote
+```js
+const stdSignMsg = chain.buildMsg({
+    type: MsgVote.type,
+    proposalId,
+    voterAddr,
+    option,
 });
 ```
 

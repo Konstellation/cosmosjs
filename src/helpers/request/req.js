@@ -1,4 +1,5 @@
 import {GET, POST} from './methods';
+import {HEADER_CONTENT_TYPE, CONTENT_TYPE_APPLICATION_JSON} from './constants';
 
 /**
  * Make raw request
@@ -10,25 +11,22 @@ import {GET, POST} from './methods';
  * @param {boolean} log
  * @returns {Promise<any>}
  */
-export default function req (url, {method, path, query, data} = {}, log = false) {
-    url = new URL(`${url}${path || ''}`);
+export default function req (url, {method = GET, path = '', query, data} = {}, log = false) {
+    const urlPath = new URL(`${url}${path}`);
     query && Object.keys(query).forEach((param) => {
-        if (query[param]) url.searchParams.append(param, query[param]);
+        if (query[param]) urlPath.searchParams.append(param, query[param]);
     });
 
-    log && console.log(url.toString());
+    log && console.log(urlPath.toString());
 
-    let reqObj = {};
-    if (!method) method = GET;
-    if (method === POST) {
-        reqObj = {
+    return fetch(
+        urlPath.toString(),
+        method === POST ? {
             method,
             headers: {
-                'Content-Type': 'application/json',
+                HEADER_CONTENT_TYPE: CONTENT_TYPE_APPLICATION_JSON,
             },
             body: JSON.stringify(data),
-        };
-    }
-
-    return fetch(url.toString(), reqObj).then(response => response.json());
+        } : {}
+    ).then(response => response.json());
 }

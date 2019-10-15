@@ -1,5 +1,5 @@
 export default class StdSignMsg {
-    constructor ({msgs, chainId, accountNumber, sequence, memo, fee, gas}) {
+    constructor ({msgs, chainId, accountNumber, sequence, memo, fee: {amount, denom}, gas}) {
         return {
             chain_id: String(chainId),
             account_number: String(accountNumber),
@@ -7,8 +7,8 @@ export default class StdSignMsg {
             fee: {
                 amount: [
                     {
-                        amount: String(fee.amount),
-                        denom: String(fee.denom),
+                        amount: String(amount),
+                        denom,
                     },
                 ],
                 gas: String(gas),

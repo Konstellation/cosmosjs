@@ -1,4 +1,4 @@
-import Msg from '../Msg';
+import Msg from '../../../types/Msg';
 
 const type = 'cosmos-sdk/MsgCreateValidator';
 

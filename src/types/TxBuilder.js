@@ -1,7 +1,7 @@
 import StdTx from './StdTx';
 import StdSignMsg from './StdSignMsg';
 import sign64 from '../utils/crypto/sign64';
-import {DEFAULT_DENOM, DEFAULT_FEE, DEFAULT_GAS} from '../utils/constants';
+import {DEFAULT_DENOM, DEFAULT_FEE, DEFAULT_GAS} from '../constants';
 import BaseReq from './BaseReq';
 
 export default class TxBuilder {
@@ -98,18 +98,20 @@ export default class TxBuilder {
      * @param {number} sequence
      * @returns {BaseReq}
      */
-    baseReq ({
-                 chainId,
-                 from,
-                 memo = '',
-                 accountNumber,
-                 sequence,
-                 gas = DEFAULT_GAS,
-                 fee = {
-                     denom: DEFAULT_DENOM,
-                     amount: DEFAULT_FEE,
-                 },
-             }) {
+    baseReq (
+        {
+            chainId,
+            from,
+            memo = '',
+            accountNumber,
+            sequence,
+            gas = DEFAULT_GAS,
+            fee = {
+                denom: DEFAULT_DENOM,
+                amount: DEFAULT_FEE,
+            },
+        },
+    ) {
         if (!chainId) {
             throw new Error('chainId object was not set or invalid');
         }

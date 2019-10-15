@@ -2,7 +2,7 @@ import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgSubmitProposal';
 
-function builder ({description, initialDepositAmount, initialDepositDenom, proposal_type, proposer, title}) {
+function builder ({description, initialDeposit: {amount, denom}, proposal_type, proposer, title}) {
     return [
         {
             type,
@@ -10,8 +10,8 @@ function builder ({description, initialDepositAmount, initialDepositDenom, propo
                 description,
                 initial_deposit: [
                     {
-                        amount: String(initialDepositAmount),
-                        denom: initialDepositDenom,
+                        amount: String(amount),
+                        denom,
                     },
                 ],
                 proposal_type,

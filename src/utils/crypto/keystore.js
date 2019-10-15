@@ -8,12 +8,12 @@ export const DKLEN = 32;
 export const SALT_SIZE = 32;
 export const IV_SIZE = 16;
 export const ID_SIZE = 16;
+export const SCRYPT = 'scrypt';
 export const SCRYPT_N = 8192;
 export const SCRYPT_R = 8;
 export const SCRYPT_P = 1;
 export const PBKDF2_C = 262144;
 export const PRF = 'hmac-sha256';
-export const SCRYPT = 'scrypt';
 export const PBKDF2 = 'pbkdf2';
 export const SHA256 = 'sha256';
 export const AES128CTR = 'aes-128-ctr';
@@ -165,13 +165,17 @@ export default class KeyStoreV3 {
      * @param {boolean} nonStrict
      * @returns {Buffer} privateKey
      */
-    import (v3Keystore, password, nonStrict) {
-        nonStrict = nonStrict || false;
+    import (v3Keystore, password, nonStrict = false) {
         if (!password) {
             throw new Error('No password given.');
         }
 
-        const {version, crypto} = typeof v3Keystore === 'object' ? v3Keystore : JSON.parse(nonStrict ? v3Keystore.toLowerCase() : v3Keystore);
+        const {version, crypto} = typeof v3Keystore === 'object'
+            ? v3Keystore
+            : JSON.parse(nonStrict
+                ? v3Keystore.toLowerCase()
+                : v3Keystore
+            );
         if (version !== VERSION) {
             throw new Error('Not a valid V3 wallet');
         }
@@ -194,15 +198,21 @@ export default class KeyStoreV3 {
      * @param {Buffer} iv
      * @returns {{id: string, version: number, address:string, crypto:object}}
      */
-    export (privateKey, password, address, {cipher = AES128CTR, kdf = SCRYPT, dklen = DKLEN, salt, iv} = {}) {
+    export (
+        privateKey,
+        password,
+        address,
+        {
+            cipher = AES128CTR,
+            kdf = SCRYPT,
+            dklen = DKLEN,
+            salt = cryptojs.randomBytes(SALT_SIZE),
+            iv = cryptojs.randomBytes(IV_SIZE),
+        } = {}
+    ) {
         if (!password) {
             throw new Error('No password given.');
         }
-
-        if (!salt)
-            salt = cryptojs.randomBytes(SALT_SIZE);
-        if (!iv)
-            iv = cryptojs.randomBytes(IV_SIZE);
 
         const keyDF = this.getKdf({kdf, kdfparams: {dklen, salt}});
         const derivedKey = keyDF.getDerivedKey(password);

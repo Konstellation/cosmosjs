@@ -1,7 +1,7 @@
 import api from './api';
 import msgs from './msgs';
 
-const moduleName = 'tx';
+const moduleName = 'staking';
 
 export default {
     name: moduleName,
