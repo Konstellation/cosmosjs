@@ -2,7 +2,7 @@
 
 *:star: Developed / Developing by [Konstellation](https://github.com/konstellation/) on [CosmosJS](https://github.com/cosmostation/cosmosjs/)*
 
-A JavasSript Open Source Library for [Konstellation Network](https://konstellation.tech/)
+A JavaSript Open Source Library for [Konstellation Network](https://konstellation.tech/)
 
 This library supports cosmos address generation and verification. It enables you to create an offline signature functions of different types of transaction messages. It will eventually support all the other blockchains that are based on Tendermint in the future, such as IOV and others.
 
