@@ -13,7 +13,6 @@ export default {
      * @returns {Promise<*>}
      */
     [FETCH_VALIDATORS] (status, params = {}) {
-        console.log('im heer');
         return get(this.apiUrl, {
             path: '/staking/validators',
             query: {
@@ -28,7 +27,6 @@ export default {
      * @returns {Promise<*>}
      */
     [FETCH_STAKING_POOL] () {
-        console.log('im hee2r');
         return get(this.apiUrl, {
             path: '/staking/pool',
         });

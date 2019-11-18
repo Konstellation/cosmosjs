@@ -2,7 +2,7 @@ import Msg from '../Msg';
 
 const type = 'cosmos-sdk/MsgDeposit';
 
-function builder ({amount: {amount, denom}, depositorAddr, proposalId}) {
+function builder ({amount, denom, depositorAddr, proposalId}) {
     return [
         {
             type,

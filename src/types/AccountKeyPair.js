@@ -90,7 +90,7 @@ export default class AccountKeyPair {
      * @param {Buffer} privateKey
      */
     import (privateKey) {
-        this.privateKey = privateKey;
+        this.privateKey = Buffer.from(privateKey, 'binary').slice(5, 37);
     }
 
     /**

@@ -33,6 +33,7 @@
     "scrypt.js": "^0.3.0",
     "web3-utils": "^1.0.0-beta.52",
     "uuid": "latest",
+    "@node-a-team/ts-amino": "^0.0.1-alpha.2",
     "ripemd160": "latest",
     "sha256": "^0.2.0"
   },

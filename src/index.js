@@ -443,7 +443,6 @@ class Chain {
         return get(this.apiUrl, {
             path: '/txs',
             query: {
-                'message.action': 'send',
                 'message.sender': address,
                 ...params,
             },
@@ -1227,7 +1226,7 @@ class Chain {
      */
     fetchMintParameters () {
         return get(this.apiUrl, {
-            path: '/mint/parameters',
+            path: '/minting/parameters',
         });
     }
 
@@ -1236,7 +1235,7 @@ class Chain {
      */
     fetchMintInflation () {
         return get(this.apiUrl, {
-            path: '/mint/inflation',
+            path: '/minting/inflation',
         });
     }
 
@@ -1245,7 +1244,7 @@ class Chain {
      */
     fetchMintAnnualProvisions () {
         return get(this.apiUrl, {
-            path: '/mint/annual-provisions',
+            path: '/minting/annual-provisions',
         });
     }
 
@@ -1409,7 +1408,7 @@ class Chain {
      * Submit a proposal with account.
      *
      * @param {Account} proposer
-     * @param params {{title: string, description:string, proposalType: string, amount: number, denom: string, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @param params {{title: string, description:string, proposalType: string, changes, amount: number, denom: string, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
     async submitProposalWithAccount ({proposer, ...params}) {
@@ -1437,6 +1436,7 @@ class Chain {
      * @param {string} title
      * @param {string} description
      * @param {string} proposalType
+     * @param changes
      * @param {number} amount
      * @param {string} denom
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
@@ -1449,6 +1449,7 @@ class Chain {
                               proposalType,
                               denom = DEFAULT_DENOM,
                               amount = 0,
+                              changes = undefined,
                               ...txInfo
                           }) {
         if (!proposerAddr) {
@@ -1456,7 +1457,7 @@ class Chain {
         }
 
         const tx = await post(this.apiUrl, {
-            path: '/gov/proposals',
+            path: proposalType === 'param_change' ? '/gov/proposals/param_change' : '/gov/proposals',
             data: {
                 ...this.buildBaseReq({
                     chainId: this.chainId,
@@ -1467,6 +1468,7 @@ class Chain {
                 description,
                 proposer: proposerAddr,
                 proposal_type: proposalType,
+                changes: proposalType === 'param_change' ? changes : undefined,
                 initial_deposit: [
                     {
                         amount: String(amount),
