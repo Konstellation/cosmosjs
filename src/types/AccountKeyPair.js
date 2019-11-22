@@ -90,7 +90,10 @@ export default class AccountKeyPair {
      * @param {Buffer} privateKey
      */
     import (privateKey) {
-        this.privateKey = Buffer.from(privateKey, 'binary').slice(5, 37);
+        if (privateKey.length === 37)
+            this.privateKey = Buffer.from(privateKey, 'binary').slice(5, 37);
+        else
+            this.privateKey = privateKey;
     }
 
     /**

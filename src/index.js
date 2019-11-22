@@ -22,6 +22,7 @@ import MsgVote from './types/msgtypes/MsgVote';
 import MsgWithdrawDelegationReward from './types/msgtypes/MsgWithdrawDelegationReward';
 
 import Socket from './ws';
+import MsgEditValidator from "./types/msgtypes/MsgEditValidator";
 
 class Chain {
     /**
@@ -919,8 +920,54 @@ class Chain {
         }, txInfo);
     }
 
-    createValidatorWithAccount () {
+    /**
+     * Edit validator info with account
+     *
+     * @param {Account} validator
+     * @param params {{minSelfDelegation, commission, description, validatorAddr: string}}
+     * @returns {*}
+     */
+    async editValidatorWithAccount ({validator, ...params}) {
+        if (!validator) {
+            throw new Error('validator object was not set or invalid');
+        }
 
+        const {result: {value}} = await this.fetchAccount(validator.getAddress());
+        validator.updateInfo(value);
+
+        return this.editValidator({
+            ...params,
+            validatorAddr: validator.getAddress(),
+            privateKey: validator.getPrivateKey(),
+            publicKey: validator.getPublicKeyEncoded(),
+            accountNumber: validator.getAccountNumber(),
+            sequence: validator.getSequence(),
+        });
+    }
+
+
+    /**
+     * Edit validator info
+     *
+     * @param {string} validatorAddr
+     * @param description
+     * @param commission
+     * @param minSelfDelegation
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {*}
+     */
+    editValidator ({validatorAddr, description, commission, minSelfDelegation, ...txInfo}) {
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgEditValidator.type,
+            validatorAddr,
+            description,
+            commission,
+            minSelfDelegation,
+        }, txInfo);
     }
 
     /**
