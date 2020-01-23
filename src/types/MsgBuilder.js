@@ -9,9 +9,13 @@ import MsgUnjail from './msgtypes/MsgUnjail';
 import MsgWithdrawDelegationReward from './msgtypes/MsgWithdrawDelegationReward';
 import MsgDeposit from './msgtypes/MsgDeposit';
 import MsgVote from './msgtypes/MsgVote';
+import MsgIssueCreate from './msgtypes/MsgIssueCreate';
+import MsgIssueApprove from './msgtypes/MsgIssueApprove';
+import MsgIssueTransfer from './msgtypes/MsgIssueTransfer';
+import MsgIssueTransferFrom from './msgtypes/MsgIssueTransferFrom';
 
 export default class MsgBuilder {
-    constructor () {
+    constructor() {
         this.msgTypes = {};
     }
 
@@ -20,7 +24,7 @@ export default class MsgBuilder {
      *
      * @param {{type:string, builder: function}} msgType
      */
-    addMsgType (msgType) {
+    addMsgType(msgType) {
         this.msgTypes[msgType.type] = msgType;
         // msgs.forEach(msg => console.log(msg.type));
     }
@@ -30,7 +34,7 @@ export default class MsgBuilder {
      *
      * @returns {MsgBuilder}
      */
-    registerMsgTypes () {
+    registerMsgTypes() {
         // bank
         this.addMsgType(MsgSend);
         // staking
@@ -47,6 +51,11 @@ export default class MsgBuilder {
         this.addMsgType(MsgSubmitProposal);
         this.addMsgType(MsgDeposit);
         this.addMsgType(MsgVote);
+        // issue
+        this.addMsgType(MsgIssueCreate);
+        this.addMsgType(MsgIssueApprove);
+        this.addMsgType(MsgIssueTransfer);
+        this.addMsgType(MsgIssueTransferFrom);
 
         return this;
     }
@@ -56,7 +65,7 @@ export default class MsgBuilder {
      * @param {string} type
      * @returns {Msg}
      */
-    getMsgType (type) {
+    getMsgType(type) {
         return this.msgTypes[type];
         // !msgType ? new Error("No such input.type: " + type) : '';
     }
