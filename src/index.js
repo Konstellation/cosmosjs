@@ -26,7 +26,7 @@ import MsgIssueApprove from "./types/msgtypes/MsgIssueApprove";
 import MsgIssueTransfer from "./types/msgtypes/MsgIssueTransfer";
 import MsgIssueTransferFrom from "./types/msgtypes/MsgIssueTransferFrom";
 import MsgIssueIncreaseAllowance from "./types/msgtypes/MsgIssueIncreaseAllowance";
-import MsgIssueDecreaseAllowance from "./types/msgtypes/MsgIssueIncreaseAllowance";
+import MsgIssueDecreaseAllowance from "./types/msgtypes/MsgIssueDecreaseAllowance";
 
 import Socket from './ws';
 
@@ -2061,12 +2061,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async increaseAllowance({
-                                ownerAddr,
-                                spenderAddr,
-                                amount,
-                                ...txInfo
-                            }) {
+    increaseAllowance({
+                          ownerAddr,
+                          spenderAddr,
+                          amount,
+                          ...txInfo
+                      }) {
         if (!spenderAddr) {
             throw new Error('spenderAddr object was not set or invalid');
         }

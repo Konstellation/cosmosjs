@@ -13,6 +13,8 @@ import MsgIssueCreate from './msgtypes/MsgIssueCreate';
 import MsgIssueApprove from './msgtypes/MsgIssueApprove';
 import MsgIssueTransfer from './msgtypes/MsgIssueTransfer';
 import MsgIssueTransferFrom from './msgtypes/MsgIssueTransferFrom';
+import MsgIssueIncreaseAllowance from './msgtypes/MsgIssueIncreaseAllowance';
+import MsgIssueDecreaseAllowance from './msgtypes/MsgIssueDecreaseAllowance';
 
 export default class MsgBuilder {
     constructor() {
@@ -26,7 +28,6 @@ export default class MsgBuilder {
      */
     addMsgType(msgType) {
         this.msgTypes[msgType.type] = msgType;
-        // msgs.forEach(msg => console.log(msg.type));
     }
 
     /**
@@ -56,6 +57,8 @@ export default class MsgBuilder {
         this.addMsgType(MsgIssueApprove);
         this.addMsgType(MsgIssueTransfer);
         this.addMsgType(MsgIssueTransferFrom);
+        this.addMsgType(MsgIssueIncreaseAllowance);
+        this.addMsgType(MsgIssueDecreaseAllowance);
 
         return this;
     }
