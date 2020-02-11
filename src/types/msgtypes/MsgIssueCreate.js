@@ -12,7 +12,7 @@ function builder({
                      burnOwnerDisabled: burn_owner_disabled,
                      burnHolderDisabled: burn_holder_disabled,
                      burnFromDisabled: burn_from_disabled,
-                     mintingFinished: minting_finished,
+                     mintDisabled: mint_disabled,
                      freezeDisabled: freeze_disabled,
                  }) {
     return [
@@ -30,7 +30,7 @@ function builder({
                     burn_from_disabled,
                     burn_holder_disabled,
                     burn_owner_disabled,
-                    minting_finished,
+                    mint_disabled,
                     freeze_disabled,
                 }
             },

@@ -1672,8 +1672,9 @@ class Chain {
      *              burnOwnerDisabled: boolean,
      *              burnHolderDisabled: boolean,
      *              burnFromDisabled: boolean,
-     *              mintingFinished: boolean,
+     *              mintDisabled: boolean,
      *              freezeDisabled: boolean,
+     *              fee: *,
      *              gas: number,
      *              memo: string,
      *              accountNumber: number,
@@ -1713,9 +1714,10 @@ class Chain {
      * @param {boolean} burnOwnerDisabled
      * @param {boolean} burnHolderDisabled
      * @param {boolean} burnFromDisabled
-     * @param {boolean} mintingFinished
+     * @param {boolean} mintDisabled
      * @param {boolean} freezeDisabled
      * @param txInfo {{
+     *              fee: *,
      *              gas: number,
      *              memo: string,
      *              accountNumber: number,
@@ -1735,7 +1737,7 @@ class Chain {
                           burnOwnerDisabled,
                           burnHolderDisabled,
                           burnFromDisabled,
-                          mintingFinished,
+                          mintDisabled,
                           freezeDisabled,
                           ...txInfo
                       }) {
@@ -1754,7 +1756,7 @@ class Chain {
             burnOwnerDisabled,
             burnHolderDisabled,
             burnFromDisabled,
-            mintingFinished,
+            mintDisabled,
             freezeDisabled,
         }, txInfo);
     }
@@ -1767,6 +1769,35 @@ class Chain {
     fetchIssuesAll() {
         return get(this.apiUrl, {
             path: '/issue/issues/all',
+        });
+    }
+
+    /**
+     * Fetch all issues [ERC20]
+     *
+     * @param params {{owner, limit}}
+     * @returns {Promise<*>}
+     */
+    fetchIssues(params) {
+        return get(this.apiUrl, {
+            path: '/issue/issues',
+            query: params,
+        });
+    }
+
+    /**
+     * Fetch issue by denom [ERC20]
+     *
+     * @param {string} denom
+     * @returns {Promise<*>}
+     */
+    fetchIssue(denom) {
+        if (!denom) {
+            throw new Error('denom was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/issue/issue/${denom}`,
         });
     }
 
@@ -1859,6 +1890,26 @@ class Chain {
 
         return get(this.apiUrl, {
             path: `/issue/allowance/${ownerAddr}/${spenderAddr}/${denom}`,
+        });
+    }
+
+    /**
+     * Fetch allowances [ERC20]
+     *
+     * @param {string} ownerAddr
+     * @param {string} denom
+     * @returns {Promise<*>}
+     */
+    fetchAllowances(ownerAddr, denom) {
+        if (!ownerAddr) {
+            throw new Error('ownerAddr was not set or invalid');
+        }
+        if (!denom) {
+            throw new Error('denom was not set or invalid');
+        }
+
+        return get(this.apiUrl, {
+            path: `/issue/allowances/${ownerAddr}/${denom}`,
         });
     }
 
