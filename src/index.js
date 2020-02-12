@@ -533,7 +533,7 @@ class Chain {
      * @param params {{to: string, amount, fee, gas, memo: string}}
      * @returns {*}
      */
-    async transferWithAccount({ from, ...params }) {
+    async sendWithAccount({ from, ...params }) {
         if (!from) {
             throw new Error('from object was not set or invalid');
         }
@@ -560,7 +560,7 @@ class Chain {
      * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {*}
      */
-    transfer({ from, to, amount, ...txInfo }) {
+    send({ from, to, amount, ...txInfo }) {
         if (!from) {
             throw new Error('from object was not set or invalid');
         }
@@ -1929,7 +1929,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async transferTokensWithAccount({ from, ...params }) {
+    async transferWithAccount({ from, ...params }) {
         if (!from) {
             throw new Error('from object was not set or invalid');
         }
@@ -1937,7 +1937,7 @@ class Chain {
         const { result: { value } } = await this.fetchAccount(from.getAddress());
         from.updateInfo(value);
 
-        return this.transferTokens({
+        return this.transfer({
             ...params,
             fromAddr: from.getAddress(),
             privateKey: from.getPrivateKey(),
@@ -1963,12 +1963,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async transferTokens({
-                             fromAddr,
-                             toAddr,
-                             amount,
-                             ...txInfo
-                         }) {
+    async transfer({
+                       fromAddr,
+                       toAddr,
+                       amount,
+                       ...txInfo
+                   }) {
         if (!fromAddr) {
             throw new Error('fromAddr object was not set or invalid');
         }
