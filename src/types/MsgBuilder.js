@@ -15,6 +15,7 @@ import MsgIssueTransfer from './msgtypes/MsgIssueTransfer';
 import MsgIssueTransferFrom from './msgtypes/MsgIssueTransferFrom';
 import MsgIssueIncreaseAllowance from './msgtypes/MsgIssueIncreaseAllowance';
 import MsgIssueDecreaseAllowance from './msgtypes/MsgIssueDecreaseAllowance';
+import MsgIssueMint from './msgtypes/MsgIssueMint';
 
 export default class MsgBuilder {
     constructor() {
@@ -59,6 +60,7 @@ export default class MsgBuilder {
         this.addMsgType(MsgIssueTransferFrom);
         this.addMsgType(MsgIssueIncreaseAllowance);
         this.addMsgType(MsgIssueDecreaseAllowance);
+        this.addMsgType(MsgIssueMint);
 
         return this;
     }

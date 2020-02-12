@@ -27,6 +27,7 @@ import MsgIssueTransfer from "./types/msgtypes/MsgIssueTransfer";
 import MsgIssueTransferFrom from "./types/msgtypes/MsgIssueTransferFrom";
 import MsgIssueIncreaseAllowance from "./types/msgtypes/MsgIssueIncreaseAllowance";
 import MsgIssueDecreaseAllowance from "./types/msgtypes/MsgIssueDecreaseAllowance";
+import MsgIssueMint from "./types/msgtypes/MsgIssueMint";
 
 import Socket from './ws';
 
@@ -2122,6 +2123,10 @@ class Chain {
             throw new Error('spenderAddr object was not set or invalid');
         }
 
+        if (!ownerAddr) {
+            throw new Error('ownerAddr object was not set or invalid');
+        }
+
         return this.buildSignBroadcast({
             type: MsgIssueIncreaseAllowance.type,
             ownerAddr,
@@ -2186,6 +2191,10 @@ class Chain {
                                 amount,
                                 ...txInfo
                             }) {
+        if (!ownerAddr) {
+            throw new Error('ownerAddr object was not set or invalid');
+        }
+
         if (!spenderAddr) {
             throw new Error('spenderAddr object was not set or invalid');
         }
@@ -2194,6 +2203,78 @@ class Chain {
             type: MsgIssueDecreaseAllowance.type,
             ownerAddr,
             spenderAddr,
+            amount,
+        }, txInfo);
+    }
+
+    /**
+     * Mint tokens to account. [ERC20]
+     *
+     * @param {Account} minter
+     * @param params {{
+     *              toAddr: string,
+     *              amount: Array,
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *       }}
+     * @returns {Promise<*>}
+     */
+    async mintWithAccount({ minter, ...params }) {
+        if (!minter) {
+            throw new Error('minter object was not set or invalid');
+        }
+
+        const { result: { value } } = await this.fetchAccount(minter.getAddress());
+        minter.updateInfo(value);
+
+        return this.mint({
+            ...params,
+            minterAddr: minter.getAddress(),
+            privateKey: minter.getPrivateKey(),
+            publicKey: minter.getPublicKeyEncoded(),
+            accountNumber: minter.getAccountNumber(),
+            sequence: minter.getSequence(),
+        });
+    }
+
+    /**
+     * Mint tokens to account. [ERC20]
+     *
+     * @param {string} minterAddr
+     * @param {string} toAddr
+     * @param {Array} amount
+     * @param txInfo {{
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *        }}
+     * @returns {Promise<*>}
+     */
+    async mint({
+                   minterAddr,
+                   toAddr,
+                   amount,
+                   ...txInfo
+               }) {
+        if (!minterAddr) {
+            throw new Error('minterAddr object was not set or invalid');
+        }
+
+        if (!toAddr) {
+            throw new Error('toAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgIssueMint.type,
+            minterAddr,
+            toAddr,
             amount,
         }, txInfo);
     }
