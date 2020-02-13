@@ -2279,6 +2279,15 @@ class Chain {
         }, txInfo);
     }
 
+    /**
+     * Fetch issue module parameters
+     */
+    fetchIssueParameters() {
+        return get(this.apiUrl, {
+            path: '/issue/params',
+        });
+    }
+
     // --------------- ws ------------------
 
     /**
