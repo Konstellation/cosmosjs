@@ -542,7 +542,7 @@ class Chain {
         const { result: { value } } = await this.fetchAccount(from.getAddress());
         from.updateInfo(value);
 
-        return this.transfer({
+        return this.send({
             ...params,
             from: from.getAddress(),
             privateKey: from.getPrivateKey(),

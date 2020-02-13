@@ -27,11 +27,13 @@ function builder({
                     total_supply: String(totalSupply),
                     decimals: String(decimals),
                     description,
-                    burn_from_disabled,
-                    burn_holder_disabled,
-                    burn_owner_disabled,
-                    mint_disabled,
-                    freeze_disabled,
+                    features: {
+                        burn_from_disabled,
+                        burn_holder_disabled,
+                        burn_owner_disabled,
+                        mint_disabled,
+                        freeze_disabled,
+                    }
                 }
             },
         },
