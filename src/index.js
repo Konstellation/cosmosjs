@@ -1111,7 +1111,7 @@ class Chain {
         const { result: { value } } = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.withDrawDelegationRewards({
+        return this.withdrawDelegationRewards({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -1128,7 +1128,7 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async withDrawDelegationRewards({ delegatorAddr, ...txInfo }) {
+    async withdrawDelegationRewards({ delegatorAddr, ...txInfo }) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -1139,6 +1139,65 @@ class Chain {
                 ...this.buildBaseReq({
                     chainId: this.chainId,
                     from: delegatorAddr,
+                    ...txInfo,
+                }),
+            },
+        });
+
+        if (!tx.value) {
+            throw new Error('tx value was not set or invalid');
+        }
+
+        return this.buildSignBroadcastTx(tx, txInfo);
+    }
+
+    /**
+     * Withdraw validator's rewards
+     *
+     * @param {Account} validator
+     * @param params
+     * @returns {Promise<*>}
+     */
+    async withdrawValidatorRewardsWithAccount({ operator, ...params }) {
+        if (!operator) {
+            throw new Error('operator object was not set or invalid');
+        }
+
+        const { result: { value } } = await this.fetchAccount(operator.getAddress());
+        operator.updateInfo(value);
+
+        return this.withdrawValidatorRewards({
+            ...params,
+            operatorAddr: operator.getAddress(),
+            privateKey: operator.getPrivateKey(),
+            publicKey: operator.getPublicKeyEncoded(),
+            accountNumber: operator.getAccountNumber(),
+            sequence: operator.getSequence(),
+        });
+    }
+
+    /**
+     * Withdraw validator's delegation rewards
+     *
+     * @param {string} operatorAddr
+     * @param {string} validatorAddr
+     * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
+     * @returns {Promise<*>}
+     */
+    async withdrawValidatorRewards({ operatorAddr, validatorAddr, ...txInfo }) {
+        if (!operatorAddr) {
+            throw new Error('operatorAddr object was not set or invalid');
+        }
+        if (!validatorAddr) {
+            throw new Error('validatorAddr object was not set or invalid');
+        }
+
+        const tx = await post(this.apiUrl, {
+            path: `/distribution/validators/${validatorAddr}/rewards`,
+            data: {
+                ...this.buildBaseReq({
+                    chainId: this.chainId,
+                    from: operatorAddr,
                     ...txInfo,
                 }),
             },
