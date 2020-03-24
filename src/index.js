@@ -28,6 +28,8 @@ import MsgIssueTransferFrom from "./types/msgtypes/MsgIssueTransferFrom";
 import MsgIssueIncreaseAllowance from "./types/msgtypes/MsgIssueIncreaseAllowance";
 import MsgIssueDecreaseAllowance from "./types/msgtypes/MsgIssueDecreaseAllowance";
 import MsgIssueMint from "./types/msgtypes/MsgIssueMint";
+import MsgIssueBurn from "./types/msgtypes/MsgIssueBurn";
+import MsgIssueBurnFrom from "./types/msgtypes/MsgIssueBurnFrom";
 import MsgIssueFreeze from "./types/msgtypes/MsgIssueFreeze";
 import MsgIssueUnfreeze from "./types/msgtypes/MsgIssueUnfreeze";
 import MsgIssueChangeFeatures from "./types/msgtypes/MsgIssueChangeFeatures";
@@ -538,7 +540,7 @@ class Chain {
      * @param params {{to: string, amount, fee, gas, memo: string}}
      * @returns {*}
      */
-    async sendWithAccount({from, ...params}) {
+    async send({from, ...params}) {
         if (!from) {
             throw new Error('from object was not set or invalid');
         }
@@ -546,7 +548,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(from.getAddress());
         from.updateInfo(value);
 
-        return this.send({
+        return this._send({
             ...params,
             from: from.getAddress(),
             privateKey: from.getPrivateKey(),
@@ -565,7 +567,7 @@ class Chain {
      * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {*}
      */
-    send({from, to, amount, ...txInfo}) {
+    _send({from, to, amount, ...txInfo}) {
         if (!from) {
             throw new Error('from object was not set or invalid');
         }
@@ -802,7 +804,7 @@ class Chain {
      * @param params {{amount: *, fee: *, validatorAddr: string}}
      * @returns {*}
      */
-    async delegateWithAccount({delegator, ...params}) {
+    async delegate({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -810,7 +812,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.delegate({
+        return this._delegate({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -829,7 +831,7 @@ class Chain {
      * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {*}
      */
-    delegate({delegatorAddr, validatorAddr, amount, ...txInfo}) {
+    _delegate({delegatorAddr, validatorAddr, amount, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -855,7 +857,7 @@ class Chain {
      * @param params {{amount: *, fee: *, validatorSrcAddr: string, validatorDstAddr: string}}
      * @returns {*}
      */
-    async redelegateWithAccount({delegator, ...params}) {
+    async redelegate({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -863,7 +865,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.redelegate({
+        return this._redelegate({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -883,7 +885,7 @@ class Chain {
      * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {*}
      */
-    redelegate({delegatorAddr, validatorSrcAddr, validatorDstAddr, amount, ...txInfo}) {
+    _redelegate({delegatorAddr, validatorSrcAddr, validatorDstAddr, amount, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -913,7 +915,7 @@ class Chain {
      * @param params {{amount: *, fee: *, validatorAddr: string}}
      * @returns {*}
      */
-    async undelegateWithAccount({delegator, ...params}) {
+    async undelegate({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -921,7 +923,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.undelegate({
+        return this._undelegate({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -940,7 +942,7 @@ class Chain {
      * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {*}
      */
-    undelegate({delegatorAddr, validatorAddr, amount, ...txInfo}) {
+    _undelegate({delegatorAddr, validatorAddr, amount, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -966,7 +968,7 @@ class Chain {
      * @param params {{minSelfDelegation, commission, description, validatorAddr: string}}
      * @returns {*}
      */
-    async editValidatorWithAccount({validator, ...params}) {
+    async editValidator({validator, ...params}) {
         if (!validator) {
             throw new Error('validator object was not set or invalid');
         }
@@ -974,7 +976,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(validator.getAddress());
         validator.updateInfo(value);
 
-        return this.editValidator({
+        return this._editValidator({
             ...params,
             validatorAddr: validator.getAddress(),
             privateKey: validator.getPrivateKey(),
@@ -995,7 +997,7 @@ class Chain {
      * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {*}
      */
-    editValidator({validatorAddr, description, commission, minSelfDelegation, ...txInfo}) {
+    _editValidator({validatorAddr, description, commission, minSelfDelegation, ...txInfo}) {
         if (!validatorAddr) {
             throw new Error('validatorAddr object was not set or invalid');
         }
@@ -1075,7 +1077,7 @@ class Chain {
      * @param params {{delegator: Account, validatorAddr: string}}
      * @returns {*}
      */
-    async withdrawDelegationRewardWithAccount({delegator, ...params}) {
+    async withdrawDelegationReward({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -1083,7 +1085,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.withdrawDelegationReward({
+        return this._withdrawDelegationReward({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -1101,7 +1103,7 @@ class Chain {
      * @param txInfo {{accountNumber: number, gas: number, memo: string, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async withdrawDelegationReward({delegatorAddr, validatorAddr, ...txInfo}) {
+    async _withdrawDelegationReward({delegatorAddr, validatorAddr, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -1123,7 +1125,7 @@ class Chain {
      * @param params
      * @returns {Promise<*>}
      */
-    async withdrawDelegationRewardsWithAccount({delegator, ...params}) {
+    async withdrawDelegationRewards({delegator, ...params}) {
         if (!delegator) {
             throw new Error('delegator object was not set or invalid');
         }
@@ -1131,7 +1133,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(delegator.getAddress());
         delegator.updateInfo(value);
 
-        return this.withdrawDelegationRewards({
+        return this._withdrawDelegationRewards({
             ...params,
             delegatorAddr: delegator.getAddress(),
             privateKey: delegator.getPrivateKey(),
@@ -1148,7 +1150,7 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async withdrawDelegationRewards({delegatorAddr, ...txInfo}) {
+    async _withdrawDelegationRewards({delegatorAddr, ...txInfo}) {
         if (!delegatorAddr) {
             throw new Error('delegatorAddr object was not set or invalid');
         }
@@ -1178,7 +1180,7 @@ class Chain {
      * @param params
      * @returns {Promise<*>}
      */
-    async withdrawValidatorRewardsWithAccount({operator, ...params}) {
+    async withdrawValidatorRewards({operator, ...params}) {
         if (!operator) {
             throw new Error('operator object was not set or invalid');
         }
@@ -1186,7 +1188,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(operator.getAddress());
         operator.updateInfo(value);
 
-        return this.withdrawValidatorRewards({
+        return this._withdrawValidatorRewards({
             ...params,
             operatorAddr: operator.getAddress(),
             privateKey: operator.getPrivateKey(),
@@ -1204,7 +1206,7 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async withdrawValidatorRewards({operatorAddr, validatorAddr, ...txInfo}) {
+    async _withdrawValidatorRewards({operatorAddr, validatorAddr, ...txInfo}) {
         if (!operatorAddr) {
             throw new Error('operatorAddr object was not set or invalid');
         }
@@ -1303,7 +1305,7 @@ class Chain {
      * @param {string} validatorAddr Bech32 validator address
      * @param params
      */
-    async unjailValidatorWithAccount({validatorAddr, validator, ...params}) {
+    async unjailValidator({validatorAddr, validator, ...params}) {
         if (!validator) {
             throw new Error('validator object was not set or invalid');
         }
@@ -1311,7 +1313,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(validator.getAddress());
         validator.updateInfo(value);
 
-        return this.unjailValidator({
+        return this._unjailValidator({
             ...params,
             validatorAddr,
             from: validator.getAddress(),
@@ -1328,7 +1330,7 @@ class Chain {
      * @param {string} validatorAddr Bech32 validator address
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      */
-    unjailValidator({validatorAddr, ...txInfo}) {
+    _unjailValidator({validatorAddr, ...txInfo}) {
         if (!validatorAddr) {
             throw new Error('validatorAddr object was not set or invalid');
         }
@@ -1556,7 +1558,7 @@ class Chain {
      * @param params {{title: string, description:string, proposalType: string, changes, amount: number, denom: string, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async submitProposalWithAccount({proposer, ...params}) {
+    async submitProposal({proposer, ...params}) {
         if (!proposer) {
             throw new Error('proposer object was not set or invalid');
         }
@@ -1564,7 +1566,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(proposer.getAddress());
         proposer.updateInfo(value);
 
-        return this.submitProposal({
+        return this._submitProposal({
             ...params,
             proposerAddr: proposer.getAddress(),
             privateKey: proposer.getPrivateKey(),
@@ -1587,16 +1589,16 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async submitProposal({
-                             proposerAddr,
-                             title,
-                             description,
-                             proposalType,
-                             denom = DEFAULT_DENOM,
-                             amount = 0,
-                             changes = undefined,
-                             ...txInfo
-                         }) {
+    async _submitProposal({
+                              proposerAddr,
+                              title,
+                              description,
+                              proposalType,
+                              denom = DEFAULT_DENOM,
+                              amount = 0,
+                              changes = undefined,
+                              ...txInfo
+                          }) {
         if (!proposerAddr) {
             throw new Error('proposerAddr object was not set or invalid');
         }
@@ -1637,7 +1639,7 @@ class Chain {
      * @param params {{proposalId: string, amount: number, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async depositToProposalWithAccount({depositor, ...params}) {
+    async depositToProposal({depositor, ...params}) {
         if (!depositor) {
             throw new Error('depositor object was not set or invalid');
         }
@@ -1645,7 +1647,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(depositor.getAddress());
         depositor.updateInfo(value);
 
-        return this.depositToProposal({
+        return this._depositToProposal({
             ...params,
             depositorAddr: depositor.getAddress(),
             privateKey: depositor.getPrivateKey(),
@@ -1664,12 +1666,12 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    depositToProposal({
-                          depositorAddr,
-                          proposalId,
-                          amount = 0,
-                          ...txInfo
-                      }) {
+    _depositToProposal({
+                           depositorAddr,
+                           proposalId,
+                           amount = 0,
+                           ...txInfo
+                       }) {
         if (!proposalId) {
             throw new Error('proposalId object was not set or invalid');
         }
@@ -1693,7 +1695,7 @@ class Chain {
      * @param params {{proposalId: string, option: string, gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    async voteProposalWithAccount({voter, ...params}) {
+    async voteProposal({voter, ...params}) {
         if (!voter) {
             throw new Error('voter object was not set or invalid');
         }
@@ -1701,7 +1703,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(voter.getAddress());
         voter.updateInfo(value);
 
-        return this.voteProposal({
+        return this._voteProposal({
             ...params,
             voterAddr: voter.getAddress(),
             privateKey: voter.getPrivateKey(),
@@ -1720,12 +1722,12 @@ class Chain {
      * @param txInfo {{gas: number, memo: string, accountNumber: number, sequence: number, privateKey: *, publicKey: string}}
      * @returns {Promise<*>}
      */
-    voteProposal({
-                     voterAddr,
-                     proposalId,
-                     option = 'No',
-                     ...txInfo
-                 }) {
+    _voteProposal({
+                      voterAddr,
+                      proposalId,
+                      option = 'No',
+                      ...txInfo
+                  }) {
         if (!voterAddr) {
             throw new Error('voterAddr object was not set or invalid');
         }
@@ -1764,7 +1766,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async issueCreateWithAccount({issuer, ...params}) {
+    async issueCreate({issuer, ...params}) {
         if (!issuer) {
             throw new Error('issuer object was not set or invalid');
         }
@@ -1772,7 +1774,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(issuer.getAddress());
         issuer.updateInfo(value);
 
-        return this.issueCreate({
+        return this._issueCreate({
             ...params,
             issuerAddr: issuer.getAddress(),
             privateKey: issuer.getPrivateKey(),
@@ -1807,20 +1809,20 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async issueCreate({
-                          issuerAddr,
-                          denom,
-                          symbol,
-                          totalSupply,
-                          decimals,
-                          description,
-                          burnOwnerDisabled,
-                          burnHolderDisabled,
-                          burnFromDisabled,
-                          mintDisabled,
-                          freezeDisabled,
-                          ...txInfo
-                      }) {
+    async _issueCreate({
+                           issuerAddr,
+                           denom,
+                           symbol,
+                           totalSupply,
+                           decimals,
+                           description,
+                           burnOwnerDisabled,
+                           burnHolderDisabled,
+                           burnFromDisabled,
+                           mintDisabled,
+                           freezeDisabled,
+                           ...txInfo
+                       }) {
         if (!issuerAddr) {
             throw new Error('issuerAddr object was not set or invalid');
         }
@@ -1897,7 +1899,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async approveWithAccount({owner, ...params}) {
+    async approve({owner, ...params}) {
         if (!owner) {
             throw new Error('owner object was not set or invalid');
         }
@@ -1905,7 +1907,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(owner.getAddress());
         owner.updateInfo(value);
 
-        return this.approve({
+        return this._approve({
             ...params,
             ownerAddr: owner.getAddress(),
             privateKey: owner.getPrivateKey(),
@@ -1931,12 +1933,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async approve({
-                      ownerAddr,
-                      spenderAddr,
-                      amount,
-                      ...txInfo
-                  }) {
+    async _approve({
+                       ownerAddr,
+                       spenderAddr,
+                       amount,
+                       ...txInfo
+                   }) {
         if (!ownerAddr) {
             throw new Error('ownerAddr object was not set or invalid');
         }
@@ -2009,7 +2011,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async transferWithAccount({from, ...params}) {
+    async transfer({from, ...params}) {
         if (!from) {
             throw new Error('from object was not set or invalid');
         }
@@ -2017,7 +2019,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(from.getAddress());
         from.updateInfo(value);
 
-        return this.transfer({
+        return this._transfer({
             ...params,
             fromAddr: from.getAddress(),
             privateKey: from.getPrivateKey(),
@@ -2043,12 +2045,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async transfer({
-                       fromAddr,
-                       toAddr,
-                       amount,
-                       ...txInfo
-                   }) {
+    async _transfer({
+                        fromAddr,
+                        toAddr,
+                        amount,
+                        ...txInfo
+                    }) {
         if (!fromAddr) {
             throw new Error('fromAddr object was not set or invalid');
         }
@@ -2081,7 +2083,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async transferFromWithAccount({spender, ...params}) {
+    async transferFrom({spender, ...params}) {
         if (!spender) {
             throw new Error('spender object was not set or invalid');
         }
@@ -2089,7 +2091,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(spender.getAddress());
         spender.updateInfo(value);
 
-        return this.transferFrom({
+        return this._transferFrom({
             ...params,
             spenderAddr: spender.getAddress(),
             privateKey: spender.getPrivateKey(),
@@ -2116,13 +2118,13 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async transferFrom({
-                           spenderAddr,
-                           fromAddr,
-                           toAddr,
-                           amount,
-                           ...txInfo
-                       }) {
+    async _transferFrom({
+                            spenderAddr,
+                            fromAddr,
+                            toAddr,
+                            amount,
+                            ...txInfo
+                        }) {
         if (!spenderAddr) {
             throw new Error('spenderAddr object was not set or invalid');
         }
@@ -2158,7 +2160,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async increaseAllowanceWithAccount({owner, ...params}) {
+    async increaseAllowance({owner, ...params}) {
         if (!owner) {
             throw new Error('owner object was not set or invalid');
         }
@@ -2166,7 +2168,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(owner.getAddress());
         owner.updateInfo(value);
 
-        return this.increaseAllowance({
+        return this._increaseAllowance({
             ...params,
             ownerAddr: owner.getAddress(),
             privateKey: owner.getPrivateKey(),
@@ -2192,12 +2194,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    increaseAllowance({
-                          ownerAddr,
-                          spenderAddr,
-                          amount,
-                          ...txInfo
-                      }) {
+    _increaseAllowance({
+                           ownerAddr,
+                           spenderAddr,
+                           amount,
+                           ...txInfo
+                       }) {
         if (!spenderAddr) {
             throw new Error('spenderAddr object was not set or invalid');
         }
@@ -2230,7 +2232,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async decreaseAllowanceWithAccount({owner, ...params}) {
+    async decreaseAllowance({owner, ...params}) {
         if (!owner) {
             throw new Error('owner object was not set or invalid');
         }
@@ -2238,7 +2240,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(owner.getAddress());
         owner.updateInfo(value);
 
-        return this.decreaseAllowance({
+        return this._decreaseAllowance({
             ...params,
             ownerAddr: owner.getAddress(),
             privateKey: owner.getPrivateKey(),
@@ -2264,12 +2266,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async decreaseAllowance({
-                                ownerAddr,
-                                spenderAddr,
-                                amount,
-                                ...txInfo
-                            }) {
+    async _decreaseAllowance({
+                                 ownerAddr,
+                                 spenderAddr,
+                                 amount,
+                                 ...txInfo
+                             }) {
         if (!ownerAddr) {
             throw new Error('ownerAddr object was not set or invalid');
         }
@@ -2302,7 +2304,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async mintWithAccount({minter, ...params}) {
+    async mint({minter, ...params}) {
         if (!minter) {
             throw new Error('minter object was not set or invalid');
         }
@@ -2310,7 +2312,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(minter.getAddress());
         minter.updateInfo(value);
 
-        return this.mint({
+        return this._mint({
             ...params,
             minterAddr: minter.getAddress(),
             privateKey: minter.getPrivateKey(),
@@ -2336,12 +2338,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async mint({
-                   minterAddr,
-                   toAddr,
-                   amount,
-                   ...txInfo
-               }) {
+    async _mint({
+                    minterAddr,
+                    toAddr,
+                    amount,
+                    ...txInfo
+                }) {
         if (!minterAddr) {
             throw new Error('minterAddr object was not set or invalid');
         }
@@ -2354,6 +2356,142 @@ class Chain {
             type: MsgIssueMint.type,
             minterAddr,
             toAddr,
+            amount,
+        }, txInfo);
+    }
+
+    /**
+     * Burn tokens from account. [ERC20]
+     *
+     * @param {Account} burner
+     * @param params {{
+     *              amount: Array,
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *       }}
+     * @returns {Promise<*>}
+     */
+    async burn({burner, ...params}) {
+        if (!burner) {
+            throw new Error('burner object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(burner.getAddress());
+        burner.updateInfo(value);
+
+        return this._burn({
+            ...params,
+            burnerAddr: burner.getAddress(),
+            privateKey: burner.getPrivateKey(),
+            publicKey: burner.getPublicKeyEncoded(),
+            accountNumber: burner.getAccountNumber(),
+            sequence: burner.getSequence(),
+        });
+    }
+
+    /**
+     * Burn tokens from account. [ERC20]
+     *
+     * @param {string} burnerAddr
+     * @param {Array} amount
+     * @param txInfo {{
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *        }}
+     * @returns {Promise<*>}
+     */
+    async _burn({
+                    burnerAddr,
+                    amount,
+                    ...txInfo
+                }) {
+        if (!burnerAddr) {
+            throw new Error('burnerAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgIssueBurn.type,
+            burnerAddr,
+            amount,
+        }, txInfo);
+    }
+
+    /**
+     * Burn tokens from account. [ERC20]
+     *
+     * @param {Account} burner
+     * @param params {{
+     *              fromAddr: string,
+     *              amount: Array,
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *       }}
+     * @returns {Promise<*>}
+     */
+    async burnFrom({burner, ...params}) {
+        if (!burner) {
+            throw new Error('burner object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(burner.getAddress());
+        burner.updateInfo(value);
+
+        return this._burnFrom({
+            ...params,
+            burnerAddr: burner.getAddress(),
+            privateKey: burner.getPrivateKey(),
+            publicKey: burner.getPublicKeyEncoded(),
+            accountNumber: burner.getAccountNumber(),
+            sequence: burner.getSequence(),
+        });
+    }
+
+    /**
+     * Burn tokens from account descreasing allowance. [ERC20]
+     *
+     * @param {string} burnerAddr
+     * @param {string} fromAddr
+     * @param {Array} amount
+     * @param txInfo {{
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *        }}
+     * @returns {Promise<*>}
+     */
+    async _burnFrom({
+                        burnerAddr,
+                        fromAddr,
+                        amount,
+                        ...txInfo
+                    }) {
+        if (!burnerAddr) {
+            throw new Error('burnerAddr object was not set or invalid');
+        }
+
+        if (!fromAddr) {
+            throw new Error('fromAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgIssueBurnFrom.type,
+            burnerAddr,
+            fromAddr,
             amount,
         }, txInfo);
     }
@@ -2392,10 +2530,10 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async freezeWithAccount({
-                                freezer,
-                                ...params
-                            }) {
+    async freeze({
+                     freezer,
+                     ...params
+                 }) {
         if (!freezer) {
             throw new Error('minter object was not set or invalid');
         }
@@ -2403,7 +2541,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(freezer.getAddress());
         freezer.updateInfo(value);
 
-        return this.freeze({
+        return this._freeze({
             ...params,
             freezerAddr: freezer.getAddress(),
             privateKey: freezer.getPrivateKey(),
@@ -2430,13 +2568,13 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async freeze({
-                     freezerAddr,
-                     holderAddr,
-                     denom,
-                     op,
-                     ...txInfo
-                 }) {
+    async _freeze({
+                      freezerAddr,
+                      holderAddr,
+                      denom,
+                      op,
+                      ...txInfo
+                  }) {
         if (!freezerAddr) {
             throw new Error('freezerAddr object was not set or invalid');
         }
@@ -2472,10 +2610,10 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async unfreezeWithAccount({
-                                  freezer,
-                                  ...params
-                              }) {
+    async unfreeze({
+                       freezer,
+                       ...params
+                   }) {
         if (!freezer) {
             throw new Error('minter object was not set or invalid');
         }
@@ -2483,7 +2621,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(freezer.getAddress());
         freezer.updateInfo(value);
 
-        return this.unfreeze({
+        return this._unfreeze({
             ...params,
             freezerAddr: freezer.getAddress(),
             privateKey: freezer.getPrivateKey(),
@@ -2510,13 +2648,13 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async unfreeze({
-                       freezerAddr,
-                       holderAddr,
-                       denom,
-                       op,
-                       ...txInfo
-                   }) {
+    async _unfreeze({
+                        freezerAddr,
+                        holderAddr,
+                        denom,
+                        op,
+                        ...txInfo
+                    }) {
         if (!freezerAddr) {
             throw new Error('freezerAddr object was not set or invalid');
         }
@@ -2555,7 +2693,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async changeFeaturesWithAccount({owner, ...params}) {
+    async changeFeatures({owner, ...params}) {
         if (!owner) {
             throw new Error('owner object was not set or invalid');
         }
@@ -2563,7 +2701,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(owner.getAddress());
         owner.updateInfo(value);
 
-        return this.changeFeatures({
+        return this._changeFeatures({
             ...params,
             ownerAddr: owner.getAddress(),
             privateKey: owner.getPrivateKey(),
@@ -2594,16 +2732,16 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async changeFeatures({
-                             ownerAddr,
-                             denom,
-                             burnOwnerDisabled,
-                             burnHolderDisabled,
-                             burnFromDisabled,
-                             mintDisabled,
-                             freezeDisabled,
-                             ...txInfo
-                         }) {
+    async _changeFeatures({
+                              ownerAddr,
+                              denom,
+                              burnOwnerDisabled,
+                              burnHolderDisabled,
+                              burnFromDisabled,
+                              mintDisabled,
+                              freezeDisabled,
+                              ...txInfo
+                          }) {
         if (!ownerAddr) {
             throw new Error('ownerAddr object was not set or invalid');
         }
@@ -2637,7 +2775,7 @@ class Chain {
      *       }}
      * @returns {Promise<*>}
      */
-    async changeDescriptionWithAccount({owner, ...params}) {
+    async changeDescription({owner, ...params}) {
         if (!owner) {
             throw new Error('owner object was not set or invalid');
         }
@@ -2645,7 +2783,7 @@ class Chain {
         const {result: {value}} = await this.fetchAccount(owner.getAddress());
         owner.updateInfo(value);
 
-        return this.changeDescription({
+        return this._changeDescription({
             ...params,
             ownerAddr: owner.getAddress(),
             privateKey: owner.getPrivateKey(),
@@ -2672,12 +2810,12 @@ class Chain {
      *        }}
      * @returns {Promise<*>}
      */
-    async changeDescription({
-                                ownerAddr,
-                                denom,
-                                description,
-                                ...txInfo
-                            }) {
+    async _changeDescription({
+                                 ownerAddr,
+                                 denom,
+                                 description,
+                                 ...txInfo
+                             }) {
         if (!ownerAddr) {
             throw new Error('ownerAddr object was not set or invalid');
         }
