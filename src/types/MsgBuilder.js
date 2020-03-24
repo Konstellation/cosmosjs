@@ -16,6 +16,10 @@ import MsgIssueTransferFrom from './msgtypes/MsgIssueTransferFrom';
 import MsgIssueIncreaseAllowance from './msgtypes/MsgIssueIncreaseAllowance';
 import MsgIssueDecreaseAllowance from './msgtypes/MsgIssueDecreaseAllowance';
 import MsgIssueMint from './msgtypes/MsgIssueMint';
+import MsgIssueFreeze from './msgtypes/MsgIssueFreeze';
+import MsgIssueUnfreeze from './msgtypes/MsgIssueUnfreeze';
+import MsgIssueChangeFeatures from './msgtypes/MsgIssueChangeFeatures';
+import MsgIssueChangeDescription from './msgtypes/MsgIssueChangeDescription';
 
 export default class MsgBuilder {
     constructor() {
@@ -61,6 +65,10 @@ export default class MsgBuilder {
         this.addMsgType(MsgIssueIncreaseAllowance);
         this.addMsgType(MsgIssueDecreaseAllowance);
         this.addMsgType(MsgIssueMint);
+        this.addMsgType(MsgIssueFreeze);
+        this.addMsgType(MsgIssueUnfreeze);
+        this.addMsgType(MsgIssueChangeFeatures);
+        this.addMsgType(MsgIssueChangeDescription);
 
         return this;
     }
