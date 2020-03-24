@@ -34,6 +34,7 @@ import MsgIssueFreeze from "./types/msgtypes/MsgIssueFreeze";
 import MsgIssueUnfreeze from "./types/msgtypes/MsgIssueUnfreeze";
 import MsgIssueChangeFeatures from "./types/msgtypes/MsgIssueChangeFeatures";
 import MsgIssueChangeDescription from "./types/msgtypes/MsgIssueChangeDescription";
+import MsgIssueTransferOwnership from "./types/msgtypes/MsgIssueTransferOwnership";
 
 import Socket from './ws';
 
@@ -2825,6 +2826,79 @@ class Chain {
             ownerAddr,
             denom,
             description,
+        }, txInfo);
+    }
+
+    /**
+     * Transfer token's ownership to another account [ERC20]
+     *
+     * @param {Account} owner
+     * @param params {{
+     *              denom: string,
+     *              toAddr: string,
+     *              fee: *,
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *       }}
+     * @returns {Promise<*>}
+     */
+    async transferOwnership({owner, ...params}) {
+        if (!owner) {
+            throw new Error('owner object was not set or invalid');
+        }
+
+        const {result: {value}} = await this.fetchAccount(owner.getAddress());
+        owner.updateInfo(value);
+
+        return this._transferOwnership({
+            ...params,
+            ownerAddr: owner.getAddress(),
+            privateKey: owner.getPrivateKey(),
+            publicKey: owner.getPublicKeyEncoded(),
+            accountNumber: owner.getAccountNumber(),
+            sequence: owner.getSequence(),
+        });
+    }
+
+    /**
+     * Transfer token's ownership to another account [ERC20]
+     *
+     * @param {string} ownerAddr
+     * @param {string} toAddr
+     * @param {string} denom
+     * @param txInfo {{
+     *              fee: *,
+     *              gas: number,
+     *              memo: string,
+     *              accountNumber: number,
+     *              sequence: number,
+     *              privateKey: *,
+     *              publicKey: string
+     *        }}
+     * @returns {Promise<*>}
+     */
+    async _transferOwnership({
+                                 ownerAddr,
+                                 toAddr,
+                                 denom,
+                                 ...txInfo
+                             }) {
+        if (!ownerAddr) {
+            throw new Error('ownerAddr object was not set or invalid');
+        }
+        if (!toAddr) {
+            throw new Error('toAddr object was not set or invalid');
+        }
+
+        return this.buildSignBroadcast({
+            type: MsgIssueTransferOwnership.type,
+            ownerAddr,
+            toAddr,
+            denom,
         }, txInfo);
     }
 

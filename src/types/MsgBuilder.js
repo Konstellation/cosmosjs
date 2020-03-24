@@ -22,6 +22,7 @@ import MsgIssueChangeFeatures from './msgtypes/MsgIssueChangeFeatures';
 import MsgIssueChangeDescription from './msgtypes/MsgIssueChangeDescription';
 import MsgIssueBurn from './msgtypes/MsgIssueBurn';
 import MsgIssueBurnFrom from './msgtypes/MsgIssueBurnFrom';
+import MsgIssueTransferOwnership from './msgtypes/MsgIssueTransferOwnership';
 
 export default class MsgBuilder {
     constructor() {
@@ -73,6 +74,7 @@ export default class MsgBuilder {
         this.addMsgType(MsgIssueUnfreeze);
         this.addMsgType(MsgIssueChangeFeatures);
         this.addMsgType(MsgIssueChangeDescription);
+        this.addMsgType(MsgIssueTransferOwnership);
 
         return this;
     }
