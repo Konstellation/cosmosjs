@@ -14,8 +14,7 @@ function builder({
             value: {
                 freezer: freezerAddr,
                 holder: holderAddr,
-                // todo change key
-                string: denom,
+                denom,
                 op,
             }
         },

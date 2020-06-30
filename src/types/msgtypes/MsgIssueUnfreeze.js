@@ -14,7 +14,7 @@ function builder({
             value: {
                 freezer: freezerAddr,
                 holder: holderAddr,
-                string: denom,
+                denom,
                 op,
             }
         },

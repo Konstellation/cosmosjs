@@ -654,7 +654,7 @@ class Chain {
             throw new Error('address was not set or invalid');
         }
 
-        return get("http://localhost:1317", {
+        return get(this.apiUrl, {
             path: `/crypto/convert-address?address=${address}`,
         });
     }
@@ -1177,7 +1177,7 @@ class Chain {
     /**
      * Withdraw validator's rewards
      *
-     * @param {Account} validator
+     * @param {Account} operator
      * @param params
      * @returns {Promise<*>}
      */
