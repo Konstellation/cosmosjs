@@ -31,13 +31,18 @@ CosmosJS supports browserify.
 
 ## Import 
 
-#### NodeJS
+#### Vue
+```js
+import sdk from '@konstellation/cosmosjs';
+```
+
+#### NodeJS (WIP)
 
 ```js
 const sdk = require("@konstellation/cosmosjs");
 ```
 
-#### Browser
+#### Browser (WIP)
 
 ```html
 <script src='js/cosmosjs-bundle.js'></script>
@@ -49,7 +54,7 @@ Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
 
 ### Init network
 ```js
-const chain = sdk.network({
+const chain = sdk({
     apiUrl: 'http://localhost:1317',
     nodeUrl: 'http://localhost:26657',
     chainId: 'darchub',
