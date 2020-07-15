@@ -2967,3 +2967,5 @@ function network(config) {
 export default {
     network,
 };
+
+exports.network = network;

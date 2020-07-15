@@ -1,10 +1,10 @@
 {
   "name": "@konstellation/cosmosjs",
-  "version": "1.0.3",
+  "version": "1.0.5",
   "description": "A JavasScript Open Source Library for Konstellation Network",
   "main": "./src/index.js",
-  "engines": {
-    "node": ">=8.0.0"
+  "directories": {
+    "src": "src"
   },
   "keywords": [
     "cosmosjs",
@@ -17,8 +17,19 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Konstellation/cosmosjs.git"
+  },
   "author": "Konstellation",
-  "license": "MIT",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Konstellation/cosmosjs/issues"
+  },
+  "homepage": "https://github.com/Konstellation/cosmosjs#readme",
+  "engines": {
+    "node": ">=8.0.0"
+  },
   "dependencies": {
     "bech32": "^1.1.3",
     "bip32": "^1.0.2",
