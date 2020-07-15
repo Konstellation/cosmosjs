@@ -2964,4 +2964,6 @@ function network(config) {
     return new Chain(config);
 }
 
-exports.sdk = network;
+export default network;
+
+// exports.sdk = network;
