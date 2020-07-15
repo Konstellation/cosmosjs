@@ -49,8 +49,6 @@ const sdk = require("@konstellation/cosmosjs");
 ```
 
 ## Usage
-Konstellation offers LCD url(https://lcd-do-not-abuse.cosmostation.io).
-* API Rate Limiting: 10 requests per second
 
 ### Init network
 ```js
