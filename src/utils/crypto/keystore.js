@@ -1,7 +1,7 @@
 import scryptsy from 'scrypt.js';
 import cryptojs from 'crypto';
 import web3Utils from 'web3-utils';
-import uuid from 'uuid';
+import {v4} from 'uuid';
 
 export const VERSION = 3;
 export const DKLEN = 32;
@@ -25,7 +25,7 @@ class KDF {
      * @param {Buffer|string} salt
      * @param {number} dklen
      */
-    constructor ({salt, dklen = DKLEN}) {
+    constructor({salt, dklen = DKLEN}) {
         if (typeof salt === 'string') {
             salt = Buffer.from(salt, 'hex');
         }
@@ -37,14 +37,14 @@ class KDF {
     /**
      * Derive key
      */
-    getDerivedKey () {
+    getDerivedKey() {
         throw new Error('Not implemented');
     }
 
     /**
      * Get kdf params
      */
-    getKdfParams () {
+    getKdfParams() {
         throw new Error('Not implemented');
     }
 }
@@ -59,7 +59,7 @@ class ScryptKdf extends KDF {
      * @param {number} dklen
      * @param {Buffer|string} salt
      */
-    constructor ({n = SCRYPT_N, r = SCRYPT_R, p = SCRYPT_P, dklen, salt}) {
+    constructor({n = SCRYPT_N, r = SCRYPT_R, p = SCRYPT_P, dklen, salt}) {
         super({salt, dklen});
         this.kdfparams = {
             n,
@@ -74,7 +74,7 @@ class ScryptKdf extends KDF {
      * @param {string} password
      * @returns {Buffer}
      */
-    getDerivedKey (password) {
+    getDerivedKey(password) {
         return scryptsy(
             Buffer.from(password),
             this.salt,
@@ -90,7 +90,7 @@ class ScryptKdf extends KDF {
      *
      * @returns {{p: number, r: number, salt: string, dklen: number, n: number}}
      */
-    getKdfParams () {
+    getKdfParams() {
         return {
             salt: this.salt.toString('hex'),
             n: this.kdfparams.n,
@@ -111,7 +111,7 @@ class Pbkdf2Kdf extends KDF {
      * @param {string} digest
      * @param {Buffer|string} salt
      */
-    constructor ({prf = PRF, c = PBKDF2_C, dklen = DKLEN, digest = SHA256, salt}) {
+    constructor({prf = PRF, c = PBKDF2_C, dklen = DKLEN, digest = SHA256, salt}) {
         super({dklen, salt});
         this.kdfparams = {
             prf,
@@ -126,7 +126,7 @@ class Pbkdf2Kdf extends KDF {
      * @param {string} password
      * @returns {Buffer}
      */
-    getDerivedKey (password) {
+    getDerivedKey(password) {
         if (this.kdfparams.prf !== PRF) {
             throw new Error('Unsupported parameters to PBKDF2');
         }
@@ -145,7 +145,7 @@ class Pbkdf2Kdf extends KDF {
      *
      * @returns {{salt: string, c: number, prf: string, dklen: number}}
      */
-    getKdfParams () {
+    getKdfParams() {
         return {
             salt: this.salt.toString('hex'),
             c: this.kdfparams.c,
@@ -165,7 +165,7 @@ export default class KeyStoreV3 {
      * @param {boolean} nonStrict
      * @returns {Buffer} privateKey
      */
-    import (v3Keystore, password, nonStrict = false) {
+    import(v3Keystore, password, nonStrict = false) {
         if (!password) {
             throw new Error('No password given.');
         }
@@ -198,7 +198,7 @@ export default class KeyStoreV3 {
      * @param {Buffer} iv
      * @returns {{id: string, version: number, address:string, crypto:object}}
      */
-    export (
+    export(
         privateKey,
         password,
         address,
@@ -221,7 +221,7 @@ export default class KeyStoreV3 {
 
         return {
             version: VERSION,
-            id: uuid.v4({
+            id: v4({
                 random: cryptojs.randomBytes(ID_SIZE),
             }),
             address,
@@ -245,7 +245,7 @@ export default class KeyStoreV3 {
      * @param kdfparams
      * @returns {KDF}
      */
-    getKdf ({kdf, kdfparams}) {
+    getKdf({kdf, kdfparams}) {
         switch (kdf) {
             case SCRYPT:
                 return new ScryptKdf(kdfparams);
@@ -264,7 +264,7 @@ export default class KeyStoreV3 {
      * @param derivedKey
      * @returns {Buffer}
      */
-    getCipherText ({ciphertext, mac}, derivedKey) {
+    getCipherText({ciphertext, mac}, derivedKey) {
         const cipherText = Buffer.from(ciphertext, 'hex');
         const macCheck = web3Utils.sha3(Buffer.concat([derivedKey.slice(16, 32), cipherText])).replace('0x', '');
         if (macCheck !== mac) {
@@ -281,7 +281,7 @@ export default class KeyStoreV3 {
      * @param ciphertext
      * @returns {Buffer}
      */
-    checksum (derivedKey, ciphertext) {
+    checksum(derivedKey, ciphertext) {
         return web3Utils.sha3(Buffer.concat([derivedKey.slice(16, 32), Buffer.from(ciphertext, 'hex')])).replace('0x', '');
     }
 
@@ -294,7 +294,7 @@ export default class KeyStoreV3 {
      * @param iv
      * @returns {Buffer}
      */
-    encrypt (derivedKey, data, {cipherAlg = AES128CTR, iv}) {
+    encrypt(derivedKey, data, {cipherAlg = AES128CTR, iv}) {
         const cipher = cryptojs.createCipheriv(cipherAlg, derivedKey.slice(0, 16), iv);
         if (!cipher) {
             throw new Error('Unsupported cipher');
@@ -312,7 +312,7 @@ export default class KeyStoreV3 {
      * @param cipherText
      * @returns {Buffer}
      */
-    decrypt ({cipher, cipherparams: {iv}}, derivedKey, cipherText) {
+    decrypt({cipher, cipherparams: {iv}}, derivedKey, cipherText) {
         const decipher = cryptojs.createDecipheriv(
             cipher,
             derivedKey.slice(0, 16),
