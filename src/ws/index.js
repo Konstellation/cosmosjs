@@ -9,7 +9,9 @@ export default class Socket {
 
         this.events = {};
 
-        this.socket = new WebSocket(`ws://${host}/websocket`);
+        const proto = host.protocol === 'https:' ? 'wss' : 'ws';
+
+        this.socket = new WebSocket(`${proto}://${host}/websocket`);
     }
 
     /**
