@@ -5,11 +5,11 @@ export default class Socket {
      * @param {string} nodeUrl
      */
     constructor (nodeUrl) {
-        const {host} = new URL(nodeUrl);
+        const {host, protocol} = new URL(nodeUrl);
 
         this.events = {};
 
-        const proto = host.protocol === 'https:' ? 'wss' : 'ws';
+        const proto = protocol === 'https:' ? 'wss' : 'ws';
 
         this.socket = new WebSocket(`${proto}://${host}/websocket`);
     }
