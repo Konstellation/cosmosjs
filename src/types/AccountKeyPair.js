@@ -2,11 +2,11 @@ import bip39 from 'bip39';
 import bip32 from 'bip32';
 import bech32 from 'bech32';
 import secp256k1 from 'secp256k1';
-import {ECPair} from 'bitcoinjs-lib';
+import { ECPair } from 'bitcoinjs-lib';
 import KeyStoreV3 from '../utils/crypto/keystore';
 import btcaddr from "../utils/crypto/btcaddr";
 import {
-    DEFAULT_BECH32_PREFIX,
+    BECH32_MAIN_PREFIX,
     DEFAULT_KEY_PATH,
 } from '../constants';
 
@@ -17,7 +17,7 @@ export default class AccountKeyPair {
      * @param {string} bech32MainPrefix
      * @param {string} path
      */
-    constructor (bech32MainPrefix = DEFAULT_BECH32_PREFIX, path = DEFAULT_KEY_PATH) {
+    constructor(bech32MainPrefix = BECH32_MAIN_PREFIX, path = DEFAULT_KEY_PATH) {
         this.path = path;
         this.bech32MainPrefix = bech32MainPrefix;
     }
@@ -29,7 +29,7 @@ export default class AccountKeyPair {
      * @param {string} prefix
      * @returns {boolean}
      */
-    static isValidAddress (address, prefix = DEFAULT_BECH32_PREFIX) {
+    static isValidAddress(address, prefix = BECH32_MAIN_PREFIX) {
         const preReg = new RegExp(`^${prefix}1`);
         if (!preReg.test(address)) {
             return false;
@@ -54,14 +54,14 @@ export default class AccountKeyPair {
      * @param {string} privateKey
      * @returns {boolean}
      */
-    static isValidPrivate (privateKey) {
+    static isValidPrivate(privateKey) {
         return /^[0-9a-fA-F]{64}$/i.test(privateKey);
     }
 
     /**
      * Generate key pair
      */
-    generate () {
+    generate() {
         this.mnemonic = bip39.generateMnemonic(256);
         const seed = bip39.mnemonicToSeed(this.mnemonic);
         const node = bip32.fromSeed(seed);
@@ -74,7 +74,7 @@ export default class AccountKeyPair {
      *
      * @param {string} mnemonic
      */
-    recover (mnemonic) {
+    recover(mnemonic) {
         this.checkSeed(mnemonic);
 
         this.mnemonic = mnemonic;
@@ -87,13 +87,14 @@ export default class AccountKeyPair {
     /**
      * Set private key
      *
-     * @param {Buffer} privateKey
+     * @param {{Buffer}, {string}}
      */
-    import (privateKey) {
+    import({ privateKey, name }) {
         if (privateKey.length === 37)
             this.privateKey = Buffer.from(privateKey, 'binary').slice(5, 37);
         else
             this.privateKey = privateKey;
+        this.name = name;
     }
 
     /**
@@ -101,7 +102,7 @@ export default class AccountKeyPair {
      *
      * @returns {string|*}
      */
-    getMnemonic () {
+    getMnemonic() {
         return this.mnemonic;
     }
 
@@ -110,7 +111,7 @@ export default class AccountKeyPair {
      *
      * @returns string
      */
-    getAddress () {
+    getAddress() {
         let publicKey = this.getPublicKey();
         if (publicKey.length > 33) {
             publicKey = publicKey.slice(5, publicKey.length);
@@ -124,7 +125,7 @@ export default class AccountKeyPair {
      *
      * @returns {ECPair}
      */
-    getECPair () {
+    getECPair() {
         return ECPair.fromPrivateKey(this.privateKey, {
             compressed: false,
         });
@@ -135,7 +136,7 @@ export default class AccountKeyPair {
      *
      * @returns {Buffer}
      */
-    getPrivateKey () {
+    getPrivateKey() {
         return this.privateKey;
     }
 
@@ -143,7 +144,7 @@ export default class AccountKeyPair {
      * Get private key encoded into base64
      * @returns {string}
      */
-    getPrivateKeyEncoded () {
+    getPrivateKeyEncoded() {
         return Buffer.from(this.getPrivateKey(), 'binary')
             .toString('base64');
     }
@@ -153,7 +154,7 @@ export default class AccountKeyPair {
      *
      * @returns {string}
      */
-    getPublicKeyEncoded () {
+    getPublicKeyEncoded() {
         return Buffer.from(this.getPublicKey(), 'binary')
             .toString('base64');
     }
@@ -163,8 +164,12 @@ export default class AccountKeyPair {
      *
      * @returns {Buffer}
      */
-    getPublicKey () {
+    getPublicKey() {
         return secp256k1.publicKeyCreate(this.getPrivateKey());
+    }
+
+    getName() {
+        return this.name;
     }
 
     /**
@@ -172,12 +177,13 @@ export default class AccountKeyPair {
      *
      * @returns {{privateKey, address, mnemonic: string | *, publicKey}}
      */
-    toJSON () {
+    toJSON() {
         return {
             mnemonic: this.mnemonic,
             privateKey: this.getPrivateKeyEncoded(),
             publicKey: this.getPublicKeyEncoded(),
             address: this.getAddress(),
+            name: this.getName(),
         };
     }
 
@@ -186,7 +192,7 @@ export default class AccountKeyPair {
      *
      * @param {string} mnemonic
      */
-    checkSeed (mnemonic) {
+    checkSeed(mnemonic) {
         const seed = mnemonic.split(' ');
         if (seed.length !== 12 && seed.length !== 24) {
             throw new Error('seed length must be equal 12 or 24');
@@ -201,7 +207,7 @@ export default class AccountKeyPair {
      *
      * @returns {boolean}
      */
-    isValidAddress () {
+    isValidAddress() {
         return AccountKeyPair.isValidAddress(this.getAddress(), this.bech32MainPrefix);
     }
 
@@ -210,7 +216,7 @@ export default class AccountKeyPair {
      *
      * @returns {boolean}
      */
-    isValidPrivate () {
+    isValidPrivate() {
         return AccountKeyPair.isValidPrivate(this.getPrivateKeyEncoded());
     }
 
@@ -220,12 +226,13 @@ export default class AccountKeyPair {
      * @param {string} password
      * @returns {{id: string, version: number, address: string, crypto: Object}}
      */
-    toV3KeyStore (password) {
+    toV3KeyStore(password) {
         if (!password) {
             throw new Error('No password given.');
         }
 
-        return new KeyStoreV3().export(this.getPrivateKey(), password, this.getAddress());
+        return new KeyStoreV3().export(password,
+            this.getPrivateKey(), this.getPublicKey(), this.getAddress(), this.getName());
     }
 
     /**
@@ -233,7 +240,7 @@ export default class AccountKeyPair {
      * @param {object} v3Keystore
      * @param {string} password
      */
-    fromV3KeyStore (v3Keystore, password) {
+    fromV3KeyStore(v3Keystore, password) {
         if (!password) {
             throw new Error('No password given.');
         }

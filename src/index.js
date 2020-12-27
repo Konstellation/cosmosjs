@@ -7,7 +7,7 @@ import post from './helpers/request/post';
 import req from './helpers/request/req';
 
 import {
-    DEFAULT_BECH32_PREFIX,
+    BECH32_MAIN_PREFIX,
     DEFAULT_DENOM,
     DEFAULT_KEY_PATH,
 } from './constants';
@@ -52,7 +52,7 @@ class Chain {
             apiUrl,
             nodeUrl,
             chainId,
-            bech32MainPrefix = DEFAULT_BECH32_PREFIX,
+            bech32MainPrefix = BECH32_MAIN_PREFIX,
             path = DEFAULT_KEY_PATH,
         },
     ) {
