@@ -37,6 +37,7 @@ import MsgIssueChangeDescription from "./types/msgtypes/MsgIssueChangeDescriptio
 import MsgIssueTransferOwnership from "./types/msgtypes/MsgIssueTransferOwnership";
 
 import Socket from './ws';
+import AccountMultisig from "./types/AccountMultisig";
 
 class Chain {
     /**
@@ -90,6 +91,18 @@ class Chain {
      */
     generateAccount() {
         return new Account(this.bech32MainPrefix, this.path).generate();
+    }
+
+    /**
+     * Generate account
+     *
+     * @param name {string}
+     * @param treshold {number}
+     * @param publicKeys {Array<string>}
+     * @returns {Account}
+     */
+    generateMultisigAccount(name, treshold, publicKeys) {
+        return new AccountMultisig(this.bech32MainPrefix, this.path, name, treshold, publicKeys).generate();
     }
 
     /**
