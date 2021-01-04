@@ -1,7 +1,7 @@
 import { encodeUint8 } from "@node-a-team/ts-amino/dist/encoder";
 
 export const PubKeySecp256k1 = '23590233135';
-export const PubKeyMultisigTreshold = '34193247226';
+export const PubKeyMultisigThreshold = '34193247226';
 
 const Typ3_Varint = 0;
 const Typ3_8Byte = 1;
@@ -16,11 +16,11 @@ const Typ3_4Byte = 5;
  */
 export const TypeInfos = (t) => {
     switch (t) {
-        case PubKeyMultisigTreshold:
+        case PubKeyMultisigThreshold:
             return {
                 prefix: [34, 193, 247, 226],
                 disamb: [180, 73, 174],
-                name: 'tendermint/PubKeyMultisigTreshold',
+                name: 'tendermint/PubKeyMultisigThreshold',
                 registered: true,
             };
         case PubKeySecp256k1:
@@ -43,9 +43,9 @@ export const TypeInfos = (t) => {
 
 export const FieldInfos = (t) => {
     switch (t) {
-        case PubKeyMultisigTreshold:
+        case PubKeyMultisigThreshold:
             return {
-                treshold: {
+                threshold: {
                     index: 0,
                     binFieldNum: 1,
                     ftype: 'Number',
@@ -145,17 +145,16 @@ export const encodeBinaryByteArray = (val) => {
 };
 
 export const encodeBinaryNumber = (val) => {
-    // const len = val.length;
     return [val]
 };
 
 export const encodeBinaryList = (val, finfo) => {
     const buf = [];
     for (const e of val) {
-        const typ3 = typeToTyp3(e.payload, finfo);
+        const typ3 = typeToTyp3(e, finfo);
         buf.push(...encodeFieldNumberAndTyp3(finfo.binFieldNum, typ3));
 
-        const bz = marshalBinaryBare(e.payload, finfo.prefix);
+        const bz = marshalBinaryBare(e, finfo.prefix);
         buf.push(bz.length);
         buf.push(...bz);
     }
@@ -202,6 +201,21 @@ export const marshalBinaryBare = (val, t) => {
     if (info.registered) {
         return [...info.prefix, ...bz];
     }
+};
+
+/**
+ * GLOBAL KOSTYL
+ * @param val
+ * @return {Buffer}
+ */
+export const marshalBinaryBareMULTISIG = (val) => {
+    const buf = [10, 5, 8];
+    buf.push(val.bitArray.extraBitsStored);
+    buf.push(...[18, 1]);
+    buf.push(...val.bitArray.elems);
+    buf.push(...val.sigs.map(v => encodeBinary(v)).map(v => [18, ...v]).flat());
+
+    return Buffer.from(buf);
 };
 
 export const unmarshalBinaryBare = (val, t) => {

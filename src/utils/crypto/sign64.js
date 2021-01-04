@@ -10,10 +10,10 @@ import sortObject from '../encode/sortObject';
  * @returns {string}
  */
 export default (msg, privateKey) => {
-    const hash = crypto.createHash('sha256')
-        .update(JSON.stringify(sortObject(msg)))
-        .digest('hex');
-    const signObj = secp256k1.sign(Buffer.from(hash, 'hex'), privateKey);
+    const sorted = sortObject(msg);
+    const json = JSON.stringify(sorted);
+    const hash = crypto.createHash('sha256').update(json).digest();
+    const signObj = secp256k1.sign( Buffer.from(hash), privateKey);
 
     return Buffer.from(signObj.signature, 'binary').toString('base64');
 }

@@ -38,6 +38,7 @@ import MsgIssueTransferOwnership from "./types/msgtypes/MsgIssueTransferOwnershi
 
 import Socket from './ws';
 import AccountMultisig from "./types/AccountMultisig";
+import StdTx from "./types/StdTx";
 
 class Chain {
     /**
@@ -97,12 +98,13 @@ class Chain {
      * Generate account
      *
      * @param name {string}
-     * @param treshold {number}
+     * @param threshold {number}
      * @param publicKeys {Array<string>}
-     * @returns {Account}
+     * @param nosort {boolean}
+     * @returns {AccountMultisig}
      */
-    generateMultisigAccount(name, treshold, publicKeys) {
-        return new AccountMultisig(this.bech32MainPrefix, this.path, name, treshold, publicKeys).generate();
+    generateMultisigAccount(name, threshold, publicKeys, nosort) {
+        return new AccountMultisig(this.bech32MainPrefix, this.path, name, threshold, publicKeys, nosort);
     }
 
     /**
@@ -144,6 +146,10 @@ class Chain {
             : this.importAccountFromV3KeyStore(keyStore, pass);
     }
 
+    importAccountMultisig({ public_keys, name }) {
+        return new AccountMultisig(this.bech32MainPrefix, this.path).fromJSON({ public_keys, name })
+    }
+
     /**
      * Export account to key store v3
      *
@@ -182,7 +188,7 @@ class Chain {
      * @returns {StdSignMsg}
      */
     buildSignMsg(msg, txInfo) {
-        return this.txBuilder.build(msg, {
+        return this.txBuilder.prepare(msg, {
             chainId: this.chainId,
             ...txInfo,
         });
@@ -228,7 +234,64 @@ class Chain {
      * @returns {StdTx}
      */
     sign(stdSignMsg, privateKey, publicKey) {
-        return this.txBuilder.sign(stdSignMsg, privateKey, publicKey);
+        return this.txBuilder.signMsg(stdSignMsg, privateKey, publicKey);
+    }
+
+    /**
+     * Create new tx from json
+     *
+     * @param {Object} stdTx
+     * @returns {StdTx}
+     */
+    newTx(stdTx) {
+        return this.txBuilder.newTx(stdTx);
+    }
+
+
+    /**
+     * Create new signature from json
+     *
+     * @param {Object} stdSignature
+     * @returns {StdSignature}
+     */
+    newSignature(stdSignature) {
+        return this.txBuilder.newSignature(stdSignature);
+    }
+
+    /**
+     * Sign tx using private key of the account
+     *
+     * @param {StdTx} stdTx
+     * @param privateKey
+     * @param {string} publicKey
+     * @returns {StdTx}
+     */
+    signTx(stdTx, privateKey, publicKey) {
+        return this.txBuilder.signTx(stdTx, privateKey, publicKey);
+    }
+
+    /**
+     * Sign tx using private key of the account
+     *
+     * @param {StdTx} stdTx
+     * @param {Account} account
+     * @returns {StdTx}
+     */
+    async signTxWithAccount(stdTx, account) {
+        if (!account) {
+            throw new Error('account object was not set or invalid');
+        }
+
+
+        const { result: { value } } = await this.fetchAccount(account.getAddress());
+        account.updateInfo(value);
+
+        return this.txBuilder.signTx(stdTx, {
+            privateKey: account.getPrivateKey(),
+            publicKey: account.getPublicKeyEncoded(),
+            accountNumber: account.getAccountNumber(),
+            sequence: account.getSequence()
+        });
     }
 
     /**
@@ -300,6 +363,110 @@ class Chain {
         return this.broadcastTx(
             this.buildSignTx(stdTx, txInfo),
         );
+    }
+
+    /**
+     * Build tx
+     *
+     * @param msg
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+     * @returns {StdTx}
+     */
+    _buildTx(msg, txInfo) {
+        if (!msg) {
+            throw new Error('msg object was not set or invalid');
+        }
+
+        return this.txBuilder.build(this.buildSignMsg(msg, txInfo));
+    }
+
+    /**
+     * Build tx
+     *
+     * @param msg
+     * @param txInfo {{fee: *, gas: number, memo: string, accountNumber: number, sequence: number}}
+     * @returns {StdTx}
+     */
+    buildTx(msg, txInfo) {
+        if (!msg) {
+            throw new Error('msg object was not set or invalid');
+        }
+
+        return this._buildTx(msg, txInfo)
+    }
+
+    _composeTx({ from, to, amount, ...txInfo }) {
+        if (!from) {
+            throw new Error('from object was not set or invalid');
+        }
+        if (!to) {
+            throw new Error('to object was not set or invalid');
+        }
+        if (!amount) {
+            throw new Error('chainId object was not set or invalid');
+        }
+
+        return this.buildTx({
+            type: MsgSend.type,
+            from,
+            to,
+            amount,
+        }, txInfo);
+    }
+
+    async composeTx({ from, ...params }) {
+        if (!from) {
+            throw new Error('from object was not set or invalid');
+        }
+
+        const { result: { value } } = await this.fetchAccount(from.getAddress());
+        from.updateInfo(value);
+
+        return this._composeTx({
+            ...params,
+            from: from.getAddress(),
+            accountNumber: from.getAccountNumber(),
+            sequence: from.getSequence(),
+        });
+    }
+
+    /**
+     *
+     * @param {AccountMultisig} account
+     * @param {AccountMultisig} from
+     * @param tx
+     * @param signatures
+     * @param txInfo
+     * @return StdTx
+     * @private
+     */
+    _multisign({ account, from, tx, signatures, ...txInfo }) {
+        const stdTx = this.newTx(JSON.parse(tx));
+        const stdSignatures = signatures.map(s => this.newSignature(JSON.parse(s)));
+
+        return this.txBuilder.multisign(account.getPublicKey(), stdTx, stdSignatures);
+    }
+
+    /**
+     * @param {AccountMultisig} account
+     * @param params
+     * @return {Promise<StdTx>}
+     */
+    async multisign({ account, ...params }) {
+        if (!account) {
+            throw new Error('from object was not set or invalid');
+        }
+
+        const { result: { value } } = await this.fetchAccount(account.getAddress());
+        account.updateInfo(value);
+
+        return this._multisign({
+            ...params,
+            account,
+            from: account.getAddress(),
+            accountNumber: account.getAccountNumber(),
+            sequence: account.getSequence(),
+        });
     }
 
     // --------------- api ------------------
@@ -2980,5 +3147,3 @@ function network(config) {
 }
 
 export default network;
-
-// exports.sdk = network;

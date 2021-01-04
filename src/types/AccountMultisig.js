@@ -1,36 +1,48 @@
-import AccountKeyPair from './AccountKeyPair';
-import { bech32ifyAccPub, bech32ifyAccPubMulti, unbech32ify } from "../utils/encode/bech32";
-import { unmarshalBinaryBare } from "../utils/encode/amino";
+import {
+    bech32ifyAccAddr,
+    bech32ifyAccPub,
+    unbech32ify
+} from "../utils/encode/bech32";
+import {
+    marshalBinaryBare,
+    PubKeyMultisigThreshold,
+} from "../utils/encode/amino";
+import btcaddr from "../utils/crypto/btcaddr";
+import { multisigaddr } from "../utils/crypto/addr";
 
 export default class AccountMultisig {
-    constructor(bech32MainPrefix, path, name, treshold, publicKeys) {
+    constructor(bech32MainPrefix, path, name, threshold, publicKeys = [], nosort) {
         this.sequence = '';
         this.accountNumber = '';
-        // this.keyPair = new AccountKeyPair(bech32MainPrefix, path);
         this.name = name;
-        this.treshold = treshold;
-        this.publicKeys = publicKeys;
-        this.publicKey = [];
-    }
+        this.threshold = threshold;
 
-    generate() {
-        const t = JSON.parse('{"name":"multisig1","public_key":[],"public_keys":["darcpub1addwnpepq0ya2lr46h6suqnxfms8u5eygml9y80qn8u6m6rkju8jk9xdpcsax0yfe4d", "darcpub1addwnpepqfrtpmyzj9hps4n8hdfwtamsj8w782wch66wddeq7tjcgnjv47dfues0ssm", "darcpub1addwnpepq09vvjpvu44vyceug9etgzr95hcvpd5k3cnmtxtj64mssxmed88w65r23zd"],"treshold":3}');
-        this.publicKeys = t.public_keys;
-        const barePublicKeys = this.publicKeys.map(pk => unbech32ify(pk));
+        let pks = publicKeys.map(pk => unbech32ify(pk).payload);
 
-        const multisigPublicKey = {
-            treshold: this.treshold,
-            public_keys: barePublicKeys,
+        if (nosort) {
+            // console.log(JSON.stringify(pks));
+            pks = pks.sort((a, b) => {
+                // console.log(btcaddr(a));
+                // console.log(btcaddr(b));
+                // console.log(Buffer.from(btcaddr(a)).compare(Buffer.from(btcaddr(b))));
+                return Buffer.from(btcaddr(a)).compare(Buffer.from(btcaddr(b))) < 0
+            });
+            // console.log(JSON.stringify(pks));
+        }
+
+        this.publicKey = {
+            threshold: this.threshold,
+            public_keys: pks,
         };
-
-        const bare = bech32ifyAccPubMulti(multisigPublicKey);
-        console.log(bare);
-
-        return this;
     }
 
-    recover(mnemonic) {
-        // this.keyPair.recover(mnemonic);
+    fromJSON({ public_keys, name }) {
+        this.threshold = public_keys.threshold;
+        this.name = name;
+        this.publicKey = {
+            threshold: public_keys.threshold,
+            public_keys: public_keys.public_keys,
+        };
 
         return this;
     }
@@ -38,54 +50,23 @@ export default class AccountMultisig {
     toJSON() {
         return {
             name: this.name,
-            public_key: this.publicKey,
-            public_keys: this.publicKeys,
-            treshold: this.treshold,
+            public_key: this.getPublicKeyEncoded(),
+            public_keys: this.getPublicKey(),
+            address: this.getAddress()
         }
     }
 
-    // toV3KeyStore(pass) {
-    //     return this.keyPair.toV3KeyStore(pass);
-    // }
-    //
-    // fromV3KeyStore(keyStore, pass) {
-    //     this.keyPair.fromV3KeyStore(keyStore, pass);
-    //
-    //     return this;
-    // }
-
     getAddress() {
-        return this.keyPair.getAddress();
-    }
-
-    getECPair() {
-        return this.keyPair.getECPair();
-    }
-
-    getPrivateKey() {
-        return this.keyPair.getPrivateKey();
-    }
-
-    getPrivateKeyEncoded() {
-        return this.keyPair.getPrivateKeyEncoded();
+        return bech32ifyAccAddr(multisigaddr(marshalBinaryBare(this.publicKey, PubKeyMultisigThreshold)));
     }
 
     getPublicKey() {
-        return this.keyPair.getPublicKey();
+        return this.publicKey;
     }
 
     getPublicKeyEncoded() {
-        return this.keyPair.getPublicKeyEncoded();
+        return bech32ifyAccPub(marshalBinaryBare(this.publicKey, PubKeyMultisigThreshold), 250)
     }
-
-
-    // /**
-    //  *
-    //  * @returns {*}
-    //  */
-    // getMnemonic() {
-    //     return this.keyPair.getMnemonic();
-    // }
 
     /**
      *

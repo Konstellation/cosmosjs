@@ -3,6 +3,7 @@ import cryptojs from 'crypto';
 import web3Utils from 'web3-utils';
 import { v4 } from 'uuid';
 import { bech32ifyAccPub } from '../encode/bech32';
+import { marshalBinaryBare, PubKeySecp256k1 } from "../encode/amino";
 
 export const VERSION = 3;
 export const DKLEN = 32;
@@ -171,7 +172,6 @@ export default class KeyStoreV3 {
             throw new Error('No password given.');
         }
 
-        console.log(v3Keystore);
         const { version, crypto, name } = typeof v3Keystore === 'object'
             ? v3Keystore
             : JSON.parse(nonStrict
@@ -234,7 +234,7 @@ export default class KeyStoreV3 {
             }),
             address,
             name,
-            public_key: bech32ifyAccPub(publicKey),
+            public_key: bech32ifyAccPub(marshalBinaryBare(publicKey, PubKeySecp256k1)),
             crypto: {
                 ciphertext: ciphertext.toString('hex'),
                 cipherparams: {
