@@ -1,5 +1,7 @@
 # CosmosJS - Cosmos JavaScript Library 
 
+Supports CosmosSDK v0.37.+
+
 *:star: Developed / Developing by [Konstellation](https://github.com/konstellation/) on [CosmosJS](https://github.com/cosmostation/cosmosjs/)*
 
 A JavaSript Open Source Library for [Konstellation Network](https://konstellation.tech/)
